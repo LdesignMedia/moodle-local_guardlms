@@ -26,8 +26,27 @@
 defined('MOODLE_INTERNAL') || die();
 
 $string['pluginname'] = 'GuardLMS';
-$string['guardlms:viewsiteinfo'] = 'Serve the site version and plugin inventory to GuardLMS';
-$string['servicename'] = 'GuardLMS site info';
-$string['settings:infoheading'] = 'GuardLMS site info web service';
-$string['settings:infodesc'] = 'This plugin exposes a read only web service (local_guardlms_get_site_info) that returns the Moodle version and installed plugin inventory. Enable web services, then create a token on a dedicated service user with the GuardLMS site info service so GuardLMS can read the inventory for security monitoring.';
-$string['privacy:metadata'] = 'The GuardLMS plugin does not store any personal data. It exposes the Moodle version and installed plugin inventory through a read only web service.';
+
+// Settings.
+$string['settings:infoheading'] = 'GuardLMS site reporting';
+$string['settings:infodesc'] = 'GuardLMS monitors this site for known vulnerabilities. Once a day the plugin pushes the Moodle version, installed plugin inventory and server environment to GuardLMS over HTTPS. To connect, paste the API key from your GuardLMS dashboard below. No web service, token or service user setup is needed.';
+$string['settings:enabled'] = 'Enable daily push';
+$string['settings:enabled_desc'] = 'When enabled, the site reporting payload is sent to GuardLMS once a day.';
+$string['settings:baseurl'] = 'GuardLMS base URL';
+$string['settings:baseurl_desc'] = 'Base URL of your GuardLMS instance, for example https://app.guardlms.com.';
+$string['settings:pushpath'] = 'Push endpoint path';
+$string['settings:pushpath_desc'] = 'Path appended to the base URL that receives the push. Leave the default unless GuardLMS support tells you otherwise.';
+$string['settings:apikey'] = 'API key';
+$string['settings:apikey_desc'] = 'API key from your GuardLMS dashboard. Sent as a bearer token to authenticate the push.';
+$string['settings:sendconfig'] = 'Include Moodle configuration';
+$string['settings:sendconfig_desc'] = 'Optional. Also send selected security and session settings (such as the cookie policy) so GuardLMS can review how the site is configured. Off by default.';
+
+// Scheduled task.
+$string['task:pushsiteinfo'] = 'Push site information to GuardLMS';
+
+// Errors.
+$string['error:pushfailed'] = 'The push to GuardLMS failed: {$a}';
+$string['error:pushhttp'] = 'GuardLMS rejected the push with HTTP status {$a}.';
+
+// Privacy.
+$string['privacy:metadata'] = 'The GuardLMS plugin stores no personal data. It pushes the Moodle version, installed plugin inventory and server environment to GuardLMS for security monitoring.';

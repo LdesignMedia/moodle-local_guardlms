@@ -1,59 +1,80 @@
-# GuardLMS site info (local_guardlms)
+# GuardLMS (local_guardlms)
 
-A Moodle local plugin that exposes a read only web service reporting the site's
-Moodle version and installed plugin inventory. [GuardLMS](https://github.com/LdesignMedia/guardlms)
-reads this service to match the site against known CVEs.
+A Moodle local plugin that reports the site to [GuardLMS](https://github.com/LdesignMedia/guardlms)
+for security monitoring. Once a day the plugin pushes the Moodle version, the
+installed plugin inventory and the server environment to GuardLMS over HTTPS.
+GuardLMS matches the site against known CVEs.
 
 ## What it does
 
-The plugin registers a single external function, `local_guardlms_get_site_info`,
-behind a dedicated web service (`local_guardlms_service`). When called with a
-valid token it returns:
+A daily scheduled task builds a payload and sends it to the configured GuardLMS
+endpoint, authenticated with a bearer API key. The payload is a typed envelope so
+sections can grow over time:
 
-- the Moodle release, version number and branch
-- every installed plugin as its frankenstyle component name, version, release,
-  display name, standard/third party flag and enabled state
+- `moodle`: release, version number, branch and every installed plugin as its
+  frankenstyle component name, version, release, display name, standard/third
+  party flag and enabled state
+- `server`: operating system, hostname and webserver software
+- `php`: PHP version, SAPI, loaded `php.ini`, memory limit, max execution time,
+  upload and post size limits, timezone and the loaded extensions
+- `config` (optional, off by default): selected security and session settings,
+  such as the cookie policy, so GuardLMS can review how the site is hardened
 
-GuardLMS matches CVEs on the component name and version, so the inventory is
-returned with the raw values exactly as Moodle records them.
+Plugin versions are reported with the raw values exactly as Moodle records them,
+because GuardLMS matches CVEs on the component name and version.
 
-### Parameters
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `onlythirdparty` | bool | `false` | When true, only non-standard (third party) plugins are returned. |
-
-### Example response
+### Example payload
 
 ```json
 {
-  "release": "4.5.3+ (Build: 20250101)",
-  "version": "2024100700.05",
-  "branch": "405",
-  "plugincount": 2,
-  "plugins": [
-    {
-      "component": "mod_quiz",
-      "type": "mod",
-      "name": "quiz",
-      "version": "2024100700",
-      "release": "4.5.3",
-      "displayname": "Quiz",
-      "isstandard": true,
-      "enabled": 1
-    },
-    {
-      "component": "local_guardlms",
-      "type": "local",
-      "name": "guardlms",
-      "version": "2026061300",
-      "release": "1.0.0",
-      "displayname": "GuardLMS",
-      "isstandard": false,
-      "enabled": -1
-    }
-  ],
-  "generatedtime": 1781308800
+  "platform": "moodle",
+  "siteurl": "https://lms.example.com",
+  "generatedtime": 1781308800,
+  "moodle": {
+    "release": "4.5.3+ (Build: 20250101)",
+    "version": "2024100700.05",
+    "branch": "405",
+    "plugincount": 2,
+    "plugins": [
+      {
+        "component": "mod_quiz",
+        "type": "mod",
+        "name": "quiz",
+        "version": "2024100700",
+        "release": "4.5.3",
+        "displayname": "Quiz",
+        "isstandard": true,
+        "enabled": 1
+      },
+      {
+        "component": "local_guardlms",
+        "type": "local",
+        "name": "guardlms",
+        "version": "2026061900",
+        "release": "1.1.0",
+        "displayname": "GuardLMS",
+        "isstandard": false,
+        "enabled": -1
+      }
+    ]
+  },
+  "server": {
+    "os_family": "Linux",
+    "os": "Linux",
+    "hostname": "web01",
+    "webserver": "Apache/2.4.58"
+  },
+  "php": {
+    "version": "8.2.0",
+    "sapi": "fpm-fcgi",
+    "ini": "/etc/php/8.2/fpm/php.ini",
+    "memory_limit": "512M",
+    "max_execution_time": "30",
+    "upload_max_filesize": "100M",
+    "post_max_size": "100M",
+    "timezone": "Europe/Amsterdam",
+    "extensions": ["Core", "curl", "json", "..."]
+  }
 }
 ```
 
@@ -64,14 +85,16 @@ returned with the raw values exactly as Moodle records them.
 
 ## Configuration
 
-1. Enable web services: Site administration > Advanced features > Enable web services.
-2. Enable a protocol (REST is recommended): Site administration > Server > Web services > Manage protocols.
-3. Create a dedicated service user and grant it the `local/guardlms:viewsiteinfo`
-   capability at system level.
-4. Add that user to the GuardLMS site info service: Site administration > Server >
-   Web services > External services > GuardLMS site info > Authorised users.
-5. Create a token for that user against the GuardLMS site info service.
-6. Provide the token and site URL to GuardLMS.
+1. Open Site administration > Plugins > Local plugins > GuardLMS.
+2. Paste the API key from your GuardLMS dashboard.
+3. Leave the base URL and endpoint path at their defaults unless GuardLMS support
+   tells you otherwise.
+4. Optionally enable "Include Moodle configuration" to also report selected
+   security and session settings.
+
+That is all. No web services, protocols, service users or tokens are needed. The
+daily push runs from Moodle cron; you can also run it on demand from Site
+administration > Server > Scheduled tasks.
 
 ## Requirements
 

@@ -27,13 +27,10 @@ namespace local_guardlms\privacy;
 
 use core_privacy\local\metadata\null_provider;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * This plugin stores no personal data.
  */
 class provider implements null_provider {
-
     /**
      * Reason why this plugin stores no personal data.
      *

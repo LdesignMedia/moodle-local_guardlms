@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Capability definitions for local_guardlms.
+ * Scheduled task definitions for local_guardlms.
  *
  * @package    local_guardlms
  * @copyright  2026 Luuk Verhoeven, ldesignmedia.nl <info@ldesignmedia.nl>
@@ -25,12 +25,14 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$capabilities = [
-    'local/guardlms:viewsiteinfo' => [
-        'captype' => 'read',
-        'contextlevel' => CONTEXT_SYSTEM,
-        'archetypes' => [
-            'manager' => CAP_ALLOW,
-        ],
+$tasks = [
+    [
+        'classname' => 'local_guardlms\task\push_site_info',
+        'blocking' => 0,
+        'minute' => 'R',
+        'hour' => 'R',
+        'day' => '*',
+        'dayofweek' => '*',
+        'month' => '*',
     ],
 ];
