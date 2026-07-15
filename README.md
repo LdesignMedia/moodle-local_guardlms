@@ -102,8 +102,9 @@ is about to expire, open the connect page and click **Reconnect to GuardLMS**.
 For advanced setups you can still configure the plugin by hand:
 
 1. Open Site administration > Plugins > Local plugins > GuardLMS.
-2. Paste a website-bound inventory push key generated in the GuardLMS dashboard
-   (website > Settings > Moodle Plugin Connection).
+2. Paste a website-bound inventory push key. You can mint one via the GuardLMS
+   API (`POST /api/websites/{id}/inventory-key`, requires an API key with the
+   `websites:write` scope) or ask GuardLMS support.
 3. Leave the base URL and endpoint path at their defaults unless GuardLMS support
    tells you otherwise.
 4. Optionally enable "Include Moodle configuration" to also report selected
