@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Plugin version and metadata for local_guardlms.
+ * Builds the GuardLMS ownership verification meta tag for the page head.
  *
  * @package    local_guardlms
  * @copyright  2026 Luuk Verhoeven, ldesignmedia.nl <info@ldesignmedia.nl>
@@ -23,10 +23,27 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
+namespace local_guardlms\local;
 
-$plugin->component = 'local_guardlms';
-$plugin->version = 2026071500;
-$plugin->requires = 2020061500; // Moodle 3.9.
-$plugin->maturity = MATURITY_ALPHA;
-$plugin->release = '1.2.0';
+/**
+ * Emits the guardlms-verification meta tag while the site is connected.
+ */
+class head_injector {
+    /**
+     * Build the meta tag HTML, or an empty string when not applicable.
+     *
+     * @return string
+     */
+    public static function meta_tag(): string {
+        if (!get_config('local_guardlms', 'enabled')) {
+            return '';
+        }
+
+        $token = trim((string) get_config('local_guardlms', 'verificationtoken'));
+        if ($token === '') {
+            return '';
+        }
+
+        return '<meta name="guardlms-verification" content="' . s($token) . '">' . "\n";
+    }
+}

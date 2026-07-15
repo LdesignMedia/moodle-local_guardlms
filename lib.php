@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Plugin version and metadata for local_guardlms.
+ * Legacy callbacks for local_guardlms.
  *
  * @package    local_guardlms
  * @copyright  2026 Luuk Verhoeven, ldesignmedia.nl <info@ldesignmedia.nl>
@@ -25,8 +25,19 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_guardlms';
-$plugin->version = 2026071500;
-$plugin->requires = 2020061500; // Moodle 3.9.
-$plugin->maturity = MATURITY_ALPHA;
-$plugin->release = '1.2.0';
+/**
+ * Inject the GuardLMS ownership verification meta tag into the page head.
+ *
+ * Used on Moodle <= 4.3; from 4.4 the before_standard_head_html_generation
+ * hook in classes/hook_callbacks.php takes over (this callback returns an
+ * empty string there to avoid emitting the tag twice).
+ *
+ * @return string
+ */
+function local_guardlms_before_standard_html_head(): string {
+    if (class_exists(\core\hook\output\before_standard_head_html_generation::class)) {
+        return '';
+    }
+
+    return \local_guardlms\local\head_injector::meta_tag();
+}
