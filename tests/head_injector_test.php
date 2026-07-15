@@ -28,7 +28,6 @@ use local_guardlms\local\head_injector;
  * @covers     \local_guardlms\local\head_injector
  */
 final class head_injector_test extends \advanced_testcase {
-
     /**
      * The meta tag is emitted when the plugin is enabled and a token exists.
      */

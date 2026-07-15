@@ -29,7 +29,6 @@ use local_guardlms\local\connect_manager;
  * @covers     \local_guardlms\local\connect_manager
  */
 final class connect_manager_test extends \advanced_testcase {
-
     /**
      * Build a stub api_client returning a fixed exchange payload.
      *
