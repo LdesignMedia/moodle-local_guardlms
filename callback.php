@@ -15,7 +15,11 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Plugin version and metadata for local_guardlms.
+ * GuardLMS connect callback: exchanges the one-time code for the push key.
+ *
+ * GuardLMS redirects the admin's browser here after consent. The state check
+ * ties the callback to the connect attempt this site started (CSRF), and the
+ * actual exchange happens server-to-server.
  *
  * @package    local_guardlms
  * @copyright  2026 Luuk Verhoeven, ldesignmedia.nl <info@ldesignmedia.nl>
@@ -23,10 +27,23 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
+require(__DIR__ . '/../../config.php');
 
-$plugin->component = 'local_guardlms';
-$plugin->version = 2026071500;
-$plugin->requires = 2020061500; // Moodle 3.9.
-$plugin->maturity = MATURITY_ALPHA;
-$plugin->release = '1.2.0';
+use local_guardlms\local\connect_manager;
+
+require_login();
+require_capability('moodle/site:config', context_system::instance());
+
+$code = required_param('code', PARAM_ALPHANUMEXT);
+$state = required_param('state', PARAM_ALPHANUMEXT);
+
+$returnurl = new moodle_url('/local/guardlms/connect.php');
+
+try {
+    $manager = new connect_manager();
+    $manager->complete_connect($code, $state);
+} catch (moodle_exception $exception) {
+    redirect($returnurl, $exception->getMessage(), null, \core\output\notification::NOTIFY_ERROR);
+}
+
+redirect($returnurl);

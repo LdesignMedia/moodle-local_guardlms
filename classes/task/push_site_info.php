@@ -26,7 +26,7 @@
 namespace local_guardlms\task;
 
 use core\task\scheduled_task;
-use local_guardlms\local\collector;
+use local_guardlms\local\pusher;
 
 /**
  * Daily push of the Moodle, server and PHP inventory to the GuardLMS endpoint.
@@ -45,8 +45,6 @@ class push_site_info extends scheduled_task {
      * Build the payload and POST it to GuardLMS.
      */
     public function execute(): void {
-        global $CFG;
-
         if (!get_config('local_guardlms', 'enabled')) {
             mtrace('GuardLMS push disabled, skipping.');
             return;
@@ -59,41 +57,14 @@ class push_site_info extends scheduled_task {
             return;
         }
 
-        $pushpath = trim((string) get_config('local_guardlms', 'pushpath'));
-        if ($pushpath === '') {
-            $pushpath = '/api/externalpush/moodle';
-        }
-        $endpoint = rtrim($baseurl, '/') . '/' . ltrim($pushpath, '/');
-
-        $includeconfig = (bool) get_config('local_guardlms', 'sendconfig');
-        $payload = collector::build_payload($includeconfig);
-
-        require_once($CFG->libdir . '/filelib.php');
-
-        $curl = new \curl();
-        $curl->setHeader([
-            'Authorization: Bearer ' . $apikey,
-            'Content-Type: application/json',
-            'Accept: application/json',
-        ]);
-
-        $response = $curl->post($endpoint, json_encode($payload), [
-            'CURLOPT_TIMEOUT' => 30,
-            'CURLOPT_CONNECTTIMEOUT' => 10,
-        ]);
-
-        $info = $curl->get_info();
-        $httpcode = (int) ($info['http_code'] ?? 0);
-        $errno = $curl->get_errno();
-
-        if ($errno) {
-            throw new \moodle_exception('error:pushfailed', 'local_guardlms', '', $curl->error);
+        // Warn while the push key is close to its expiry date so admins can
+        // reconnect (one click) before pushes start failing.
+        $keyexpiresat = (int) get_config('local_guardlms', 'keyexpiresat');
+        if ($keyexpiresat && $keyexpiresat < time() + (30 * DAYSECS)) {
+            mtrace('Warning: the GuardLMS push key expires on ' . userdate($keyexpiresat)
+                . '. Reconnect via the GuardLMS connect page to refresh it.');
         }
 
-        if ($httpcode < 200 || $httpcode >= 300) {
-            throw new \moodle_exception('error:pushhttp', 'local_guardlms', '', $httpcode, $response);
-        }
-
-        mtrace('GuardLMS push succeeded (HTTP ' . $httpcode . ').');
+        mtrace(pusher::push());
     }
 }

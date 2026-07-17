@@ -39,6 +39,24 @@ if ($hassiteconfig) {
     $settings = new admin_settingpage('local_guardlms', get_string('pluginname', 'local_guardlms'));
     $ADMIN->add('localplugins', $settings);
 
+    // One-click connect page (also linked from the settings description).
+    $ADMIN->add('localplugins', new admin_externalpage(
+        'local_guardlms_connect',
+        get_string('connect:title', 'local_guardlms'),
+        new moodle_url('/local/guardlms/connect.php')
+    ));
+
+    $connecturl = new moodle_url('/local/guardlms/connect.php');
+    $settings->add(new admin_setting_heading(
+        'local_guardlms/connect',
+        get_string('connect:settingheading', 'local_guardlms'),
+        get_string('connect:settingdesc', 'local_guardlms')
+        . html_writer::div(
+            html_writer::link($connecturl, get_string('connect:button', 'local_guardlms'), ['class' => 'btn btn-primary']),
+            'mt-2 mb-2'
+        )
+    ));
+
     $settings->add(new admin_setting_heading(
         'local_guardlms/info',
         get_string('settings:infoheading', 'local_guardlms'),

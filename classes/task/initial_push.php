@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Plugin version and metadata for local_guardlms.
+ * Ad-hoc task that pushes the inventory right after a successful connect.
  *
  * @package    local_guardlms
  * @copyright  2026 Luuk Verhoeven, ldesignmedia.nl <info@ldesignmedia.nl>
@@ -23,10 +23,24 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
+namespace local_guardlms\task;
 
-$plugin->component = 'local_guardlms';
-$plugin->version = 2026071500;
-$plugin->requires = 2020061500; // Moodle 3.9.
-$plugin->maturity = MATURITY_ALPHA;
-$plugin->release = '1.2.0';
+use core\task\adhoc_task;
+use local_guardlms\local\pusher;
+
+/**
+ * One-off inventory push queued by the connect flow.
+ */
+class initial_push extends adhoc_task {
+    /**
+     * Push the inventory once; failures are logged, the daily task retries anyway.
+     */
+    public function execute(): void {
+        if (!get_config('local_guardlms', 'enabled')) {
+            mtrace('GuardLMS push disabled, skipping initial push.');
+            return;
+        }
+
+        mtrace(pusher::push());
+    }
+}
