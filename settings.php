@@ -52,21 +52,25 @@ if ($hassiteconfig) {
         1
     ));
 
-    $settings->add(new admin_setting_configtext(
+    $baseurl = new admin_setting_configtext(
         'local_guardlms/baseurl',
         get_string('settings:baseurl', 'local_guardlms'),
         get_string('settings:baseurl_desc', 'local_guardlms'),
         'https://app.guardlms.com',
         PARAM_URL
-    ));
+    );
+    $baseurl->set_advanced_flag_options(admin_setting_flag::ENABLED, true);
+    $settings->add($baseurl);
 
-    $settings->add(new admin_setting_configtext(
+    $pushpath = new admin_setting_configtext(
         'local_guardlms/pushpath',
         get_string('settings:pushpath', 'local_guardlms'),
         get_string('settings:pushpath_desc', 'local_guardlms'),
         '/api/externalpush/moodle',
         PARAM_RAW
-    ));
+    );
+    $pushpath->set_advanced_flag_options(admin_setting_flag::ENABLED, true);
+    $settings->add($pushpath);
 
     $settings->add(new admin_setting_configpasswordunmask(
         'local_guardlms/apikey',
