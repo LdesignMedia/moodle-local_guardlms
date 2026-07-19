@@ -54,7 +54,13 @@ class api_client {
         global $CFG;
         require_once($CFG->libdir . '/filelib.php');
 
-        $curl = new \curl();
+        // ignoresecurity: this call only ever targets the admin-configured
+        // GuardLMS base URL (a trusted first-party endpoint), so it must not be
+        // rejected by Moodle's cURL SSRF blocklist. Without this, a site whose
+        // GuardLMS host resolves to a blocked range (e.g. a self-hosted GuardLMS
+        // on a private network, or any site with hardened curlsecurityblockedhosts)
+        // would fail to connect with "The URL is blocked".
+        $curl = new \curl(['ignoresecurity' => true]);
         $curl->setHeader([
             'Content-Type: application/json',
             'Accept: application/json',

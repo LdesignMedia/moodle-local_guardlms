@@ -34,10 +34,14 @@ use local_guardlms\local\connect_manager;
 require_login();
 require_capability('moodle/site:config', context_system::instance());
 
+$PAGE->set_context(context_system::instance());
+$PAGE->set_url(new moodle_url('/local/guardlms/callback.php'));
+
 $code = required_param('code', PARAM_ALPHANUMEXT);
 $state = required_param('state', PARAM_ALPHANUMEXT);
 
-$returnurl = new moodle_url('/local/guardlms/connect.php');
+// Return to the plugin settings page, where the connection status is shown.
+$returnurl = new moodle_url('/admin/settings.php', ['section' => 'local_guardlms']);
 
 try {
     $manager = new connect_manager();

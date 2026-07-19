@@ -1,0 +1,30 @@
+/* GuardLMS brand styling for the plugin settings page. */
+
+/*
+ * The core settings page prints the plugin name as a plain heading. Hide that
+ * duplicate so the branded heading below (favicon + name) is the only title.
+ * Scoped to this plugin's settings page.
+ */
+#page-admin-setting-local_guardlms .settingsform > h2 {
+    display: none;
+}
+
+.local-guardlms-logo {
+    height: 32px;
+    width: auto;
+    margin-right: 10px;
+    vertical-align: text-bottom;
+}
+
+.local-guardlms-btn.btn {
+    background-color: #fa6e10;
+    border-color: #fa6e10;
+    color: #fff;
+}
+
+.local-guardlms-btn.btn:hover,
+.local-guardlms-btn.btn:focus {
+    background-color: #dc5304;
+    border-color: #dc5304;
+    color: #fff;
+}
