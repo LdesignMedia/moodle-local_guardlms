@@ -39,64 +39,84 @@ if ($hassiteconfig) {
     $settings = new admin_settingpage('local_guardlms', get_string('pluginname', 'local_guardlms'));
     $ADMIN->add('localplugins', $settings);
 
-    // One-click connect page (also linked from the settings description).
-    $ADMIN->add('localplugins', new admin_externalpage(
-        'local_guardlms_connect',
-        get_string('connect:title', 'local_guardlms'),
-        new moodle_url('/local/guardlms/connect.php')
-    ));
+    if ($ADMIN->fulltree) {
+        $connected = \local_guardlms\local\connect_manager::is_connected();
 
-    $connecturl = new moodle_url('/local/guardlms/connect.php');
-    $settings->add(new admin_setting_heading(
-        'local_guardlms/connect',
-        get_string('connect:settingheading', 'local_guardlms'),
-        get_string('connect:settingdesc', 'local_guardlms')
-        . html_writer::div(
-            html_writer::link($connecturl, get_string('connect:button', 'local_guardlms'), ['class' => 'btn btn-primary']),
+        // The button triggers the connect redirect directly; connect.php is a
+        // bare redirect endpoint. The status and the button live on this page.
+        $connecturl = new moodle_url('/local/guardlms/connect.php', ['sesskey' => sesskey()]);
+
+        // Connection status shown here on the settings page. The GuardLMS logo
+        // is prepended to the page title via styles.css, so no logo markup is
+        // needed here.
+        $status = '';
+        if ($connected) {
+            $status .= html_writer::div(get_string('connect:statusconnected', 'local_guardlms'), 'alert alert-success');
+
+            $details = [];
+            $websiteid = (int) get_config('local_guardlms', 'websiteid');
+            if ($websiteid) {
+                $details[] = get_string('connect:websiteid', 'local_guardlms', $websiteid);
+            }
+            $connectedat = (int) get_config('local_guardlms', 'connectedat');
+            if ($connectedat) {
+                $details[] = get_string('connect:connectedat', 'local_guardlms', userdate($connectedat));
+            }
+            $keyexpiresat = (int) get_config('local_guardlms', 'keyexpiresat');
+            if ($keyexpiresat) {
+                $details[] = get_string('connect:keyexpires', 'local_guardlms', userdate($keyexpiresat));
+            }
+            $lastpush = (int) get_config('local_guardlms', 'lastpush');
+            if ($lastpush) {
+                $details[] = get_string('connect:lastpush', 'local_guardlms', userdate($lastpush));
+            }
+            if ($details) {
+                $status .= html_writer::alist($details);
+            }
+        } else {
+            $status .= html_writer::tag('p', get_string('connect:intro', 'local_guardlms'));
+            $status .= html_writer::tag('p', get_string('connect:freeaccount', 'local_guardlms'));
+        }
+
+        // A single Connect / Reconnect button in the GuardLMS brand colour.
+        $buttonlabel = $connected
+            ? get_string('connect:reconnectbutton', 'local_guardlms')
+            : get_string('connect:button', 'local_guardlms');
+        $status .= html_writer::div(
+            html_writer::link($connecturl, $buttonlabel, ['class' => 'btn local-guardlms-btn']),
             'mt-2 mb-2'
-        )
-    ));
+        );
 
-    $settings->add(new admin_setting_heading(
-        'local_guardlms/info',
-        get_string('settings:infoheading', 'local_guardlms'),
-        get_string('settings:infodesc', 'local_guardlms')
-    ));
+        $settings->add(new admin_setting_heading('local_guardlms/header', '', $status));
 
-    $settings->add(new admin_setting_configcheckbox(
-        'local_guardlms/enabled',
-        get_string('settings:enabled', 'local_guardlms'),
-        get_string('settings:enabled_desc', 'local_guardlms'),
-        1
-    ));
+        // GuardLMS base URL stays editable so an admin can point at their own
+        // GuardLMS instance. pushpath and apikey are connection internals written
+        // by the connect flow (connect_manager::complete_connect) and are not
+        // shown, so they cannot be hand-edited to a wrong endpoint or a replaced
+        // key. pushpath falls back to its default in pusher.php.
+        $settings->add(new admin_setting_configtext(
+            'local_guardlms/baseurl',
+            get_string('settings:baseurl', 'local_guardlms'),
+            get_string('settings:baseurl_desc', 'local_guardlms'),
+            'https://app.guardlms.com',
+            PARAM_URL
+        ));
 
-    $settings->add(new admin_setting_configtext(
-        'local_guardlms/baseurl',
-        get_string('settings:baseurl', 'local_guardlms'),
-        get_string('settings:baseurl_desc', 'local_guardlms'),
-        'https://app.guardlms.com',
-        PARAM_URL
-    ));
+        // Operational toggles only make sense once the site is connected.
+        if ($connected) {
+            $settings->add(new admin_setting_configcheckbox(
+                'local_guardlms/enabled',
+                get_string('settings:enabled', 'local_guardlms'),
+                get_string('settings:enabled_desc', 'local_guardlms'),
+                1
+            ));
 
-    $settings->add(new admin_setting_configtext(
-        'local_guardlms/pushpath',
-        get_string('settings:pushpath', 'local_guardlms'),
-        get_string('settings:pushpath_desc', 'local_guardlms'),
-        '/api/externalpush/moodle',
-        PARAM_RAW
-    ));
-
-    $settings->add(new admin_setting_configpasswordunmask(
-        'local_guardlms/apikey',
-        get_string('settings:apikey', 'local_guardlms'),
-        get_string('settings:apikey_desc', 'local_guardlms'),
-        ''
-    ));
-
-    $settings->add(new admin_setting_configcheckbox(
-        'local_guardlms/sendconfig',
-        get_string('settings:sendconfig', 'local_guardlms'),
-        get_string('settings:sendconfig_desc', 'local_guardlms'),
-        0
-    ));
+            $settings->add(new admin_setting_configcheckbox(
+                'local_guardlms/sendconfig',
+                get_string('settings:sendconfig', 'local_guardlms'),
+                get_string('settings:sendconfig_desc', 'local_guardlms'),
+                0
+            ));
+        }
+    }
 }

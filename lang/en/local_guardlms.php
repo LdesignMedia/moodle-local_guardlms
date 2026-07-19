@@ -50,10 +50,6 @@ $string['settings:enabled'] = 'Enable daily push';
 $string['settings:enabled_desc'] = 'When enabled, the site reporting payload is sent to GuardLMS once a day.';
 $string['settings:baseurl'] = 'GuardLMS base URL';
 $string['settings:baseurl_desc'] = 'Base URL of your GuardLMS instance, for example https://app.guardlms.com.';
-$string['settings:pushpath'] = 'Push endpoint path';
-$string['settings:pushpath_desc'] = 'Path appended to the base URL that receives the push. Leave the default unless GuardLMS support tells you otherwise.';
-$string['settings:apikey'] = 'API key';
-$string['settings:apikey_desc'] = 'API key from your GuardLMS dashboard. Sent as a bearer token to authenticate the push.';
 $string['settings:sendconfig'] = 'Include Moodle configuration';
 $string['settings:sendconfig_desc'] = 'Optional. Also send selected security and session settings (such as the cookie policy) so GuardLMS can review how the site is configured. Off by default.';
 
