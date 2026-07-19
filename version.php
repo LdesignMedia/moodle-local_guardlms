@@ -26,7 +26,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_guardlms';
-$plugin->version = 2026072002;
+$plugin->version = 2026072003;
 $plugin->requires = 2020061500; // Moodle 3.9.
 $plugin->maturity = MATURITY_ALPHA;
 $plugin->release = '1.2.0';

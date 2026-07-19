@@ -46,9 +46,16 @@ if ($hassiteconfig) {
         // bare redirect endpoint. The status and the button live on this page.
         $connecturl = new moodle_url('/local/guardlms/connect.php', ['sesskey' => sesskey()]);
 
-        // Connection status shown here on the settings page. The GuardLMS logo
-        // is prepended to the page title via styles.css, so no logo markup is
-        // needed here.
+        // Branded heading: favicon before the plugin name. The image is built
+        // with the full wwwroot so it resolves on subdirectory installs, and the
+        // plain core title above is hidden by styles.css to avoid a duplicate.
+        $logo = html_writer::img(
+            $CFG->wwwroot . '/local/guardlms/pix/icon.png',
+            get_string('pluginname', 'local_guardlms'),
+            ['class' => 'local-guardlms-logo']
+        );
+
+        // Connection status shown here on the settings page.
         $status = '';
         if ($connected) {
             $status .= html_writer::div(get_string('connect:statusconnected', 'local_guardlms'), 'alert alert-success');
@@ -87,7 +94,11 @@ if ($hassiteconfig) {
             'mt-2 mb-2'
         );
 
-        $settings->add(new admin_setting_heading('local_guardlms/header', '', $status));
+        $settings->add(new admin_setting_heading(
+            'local_guardlms/header',
+            $logo . get_string('pluginname', 'local_guardlms'),
+            $status
+        ));
 
         // GuardLMS base URL stays editable so an admin can point at their own
         // GuardLMS instance. pushpath and apikey are connection internals written

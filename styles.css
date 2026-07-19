@@ -1,33 +1,30 @@
 /* GuardLMS brand styling for the plugin settings page. */
 
 /*
- * Prepend the GuardLMS favicon to the settings page title. Scoped to this
- * plugin's settings page and applied via ::before so the core heading is
- * decorated, not replaced. The favicon is embedded as a data URI so it resolves
- * regardless of how the aggregated CSS is served or where Moodle is installed.
+ * The core settings page prints the plugin name as a plain heading. Hide that
+ * duplicate so the branded heading below (favicon + name) is the only title.
+ * Scoped to this plugin's settings page.
  */
-#page-admin-setting-local_guardlms .settingsform > h2::before {
-    content: "";
-    display: inline-block;
-    width: 32px;
+#page-admin-setting-local_guardlms .settingsform > h2 {
+    display: none;
+}
+
+.local-guardlms-logo {
     height: 32px;
+    width: auto;
     margin-right: 10px;
     vertical-align: text-bottom;
-    background-image: url('data:image/png;base64,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');
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: contain;
 }
 
 .local-guardlms-btn.btn {
-    background-color: #FA6E10;
-    border-color: #FA6E10;
+    background-color: #fa6e10;
+    border-color: #fa6e10;
     color: #fff;
 }
 
 .local-guardlms-btn.btn:hover,
 .local-guardlms-btn.btn:focus {
-    background-color: #DC5304;
-    border-color: #DC5304;
+    background-color: #dc5304;
+    border-color: #dc5304;
     color: #fff;
 }
