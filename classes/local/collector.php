@@ -71,6 +71,7 @@ class collector {
             'moodle' => self::moodle_info(),
             'server' => self::server_info(),
             'php' => self::php_info(),
+            'database' => self::database_info(),
         ];
 
         if ($includeconfig) {
@@ -141,6 +142,45 @@ class collector {
             'os' => PHP_OS,
             'hostname' => gethostname() ?: null,
             'webserver' => $webserver ?: null,
+            // Which external session store the site uses (empty is the built-in
+            // file/database default). A Redis or Memcached class here tells
+            // GuardLMS an external service is in play beyond the loaded extensions.
+            'sessionhandler' => self::session_handler(),
+        ];
+    }
+
+    /**
+     * The configured session handler class, or empty for the built-in default.
+     *
+     * @return string
+     */
+    protected static function session_handler(): string {
+        global $CFG;
+
+        return (string) ($CFG->session_handler_class ?? '');
+    }
+
+    /**
+     * Database engine and version.
+     *
+     * GuardLMS matches CVEs and end-of-life status against the database vendor
+     * and version, so both the Moodle-facing type and the server's own reported
+     * version are included.
+     *
+     * @return array
+     */
+    protected static function database_info(): array {
+        global $CFG, $DB;
+
+        $server = $DB->get_server_info();
+
+        return [
+            'type' => (string) $CFG->dbtype,
+            'library' => (string) ($CFG->dblibrary ?? 'native'),
+            'family' => (string) $DB->get_dbfamily(),
+            'vendor' => method_exists($DB, 'get_dbvendor') ? (string) $DB->get_dbvendor() : null,
+            'version' => (string) ($server['version'] ?? ''),
+            'description' => (string) ($server['description'] ?? ''),
         ];
     }
 
