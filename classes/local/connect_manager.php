@@ -60,7 +60,7 @@ class connect_manager {
         set_config('connectstate', $state, 'local_guardlms');
         set_config('connectstateexpires', time() + self::STATE_TTL, 'local_guardlms');
 
-        $baseurl = rtrim(trim((string) get_config('local_guardlms', 'baseurl')), '/');
+        $baseurl = config::baseurl();
 
         return new \moodle_url($baseurl . '/connect/moodle', [
             'siteurl' => $CFG->wwwroot,
@@ -90,7 +90,7 @@ class connect_manager {
             throw new \moodle_exception('error:connectstate', 'local_guardlms');
         }
 
-        $client = $this->client ?? new api_client((string) get_config('local_guardlms', 'baseurl'));
+        $client = $this->client ?? new api_client(config::baseurl());
         $data = $client->exchange($code, $CFG->wwwroot, $state);
 
         set_config('apikey', $data['token'], 'local_guardlms');

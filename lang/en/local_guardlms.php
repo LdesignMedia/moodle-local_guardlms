@@ -30,8 +30,8 @@ $string['pluginname'] = 'GuardLMS';
 // Connect flow.
 $string['connect:title'] = 'Connect to GuardLMS';
 $string['connect:settingheading'] = 'Connect to GuardLMS';
-$string['connect:settingdesc'] = 'Connect this site to GuardLMS with one click. You only need a GuardLMS account (a free account is enough) — no API keys to copy. The manual settings below are a fallback for advanced setups.';
-$string['connect:intro'] = 'Connecting registers this site with your GuardLMS account, verifies site ownership automatically, and sets up the daily inventory push — all in one click.';
+$string['connect:settingdesc'] = 'Connect this site to GuardLMS with one click. You only need a GuardLMS account (a free account is enough), no API keys to copy.';
+$string['connect:intro'] = 'Connecting registers this site with your GuardLMS account, verifies site ownership automatically, and sets up the daily inventory push, all in one click.';
 $string['connect:freeaccount'] = 'You only need a GuardLMS account; a free account is enough. If you are not logged in yet, you can log in or register during the connection.';
 $string['connect:button'] = 'Connect to GuardLMS';
 $string['connect:reconnectbutton'] = 'Reconnect to GuardLMS';
@@ -44,12 +44,14 @@ $string['connect:lastpush'] = 'Last successful push: {$a}';
 $string['connect:success'] = 'Your site is now connected to GuardLMS. The first inventory push has been queued.';
 
 // Settings.
-$string['settings:infoheading'] = 'GuardLMS site reporting';
-$string['settings:infodesc'] = 'GuardLMS monitors this site for known vulnerabilities. Once a day the plugin pushes the Moodle version, installed plugin inventory and server environment to GuardLMS over HTTPS. To connect, paste the API key from your GuardLMS dashboard below. No web service, token or service user setup is needed.';
+$string['settings:advancedheading'] = 'Advanced settings';
+$string['settings:advancedwarning'] = 'These settings are only needed for a self-hosted GuardLMS instance or for support. Changing them on a normal site breaks the connection.';
+$string['settings:pushpath'] = 'Push path';
+$string['settings:pushpath_desc'] = 'Path of the inventory push endpoint on the GuardLMS host. The connection sets this automatically.';
 $string['settings:enabled'] = 'Enable daily push';
 $string['settings:enabled_desc'] = 'When enabled, the site reporting payload is sent to GuardLMS once a day.';
 $string['settings:baseurl'] = 'GuardLMS base URL';
-$string['settings:baseurl_desc'] = 'Base URL of your GuardLMS instance, for example https://app.guardlms.com.';
+$string['settings:baseurl_desc'] = 'Base URL of your GuardLMS instance, for example https://app.guardlms.com. Leave the default unless you run a self-hosted GuardLMS.';
 $string['settings:sendconfig'] = 'Include Moodle configuration';
 $string['settings:sendconfig_desc'] = 'Optional. Also send selected security and session settings (such as the cookie policy) so GuardLMS can review how the site is configured. Off by default.';
 
@@ -59,7 +61,7 @@ $string['task:pushsiteinfo'] = 'Push site information to GuardLMS';
 // Errors.
 $string['error:pushfailed'] = 'The push to GuardLMS failed: {$a}';
 $string['error:pushhttp'] = 'GuardLMS rejected the push with HTTP status {$a}.';
-$string['error:notconfigured'] = 'GuardLMS is not configured: base URL or API key missing. Use the Connect to GuardLMS page to set it up.';
+$string['error:notconfigured'] = 'GuardLMS is not connected yet. Use the Connect to GuardLMS button on the plugin settings page to set it up.';
 $string['error:connectstate'] = 'The connection attempt is invalid or has expired. Please start the connection again from the Connect to GuardLMS page.';
 $string['error:connectfailed'] = 'Could not reach GuardLMS to complete the connection: {$a}';
 $string['error:connectrejected'] = 'GuardLMS rejected the connection: {$a}';

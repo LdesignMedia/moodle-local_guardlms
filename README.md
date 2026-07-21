@@ -85,7 +85,7 @@ because GuardLMS matches CVEs on the component name and version.
 
 ## Connect to GuardLMS (recommended)
 
-1. Open Site administration > Plugins > Local plugins > Connect to GuardLMS.
+1. Open Site administration > Plugins > Local plugins > GuardLMS.
 2. Click **Connect to GuardLMS**. Your browser is sent to GuardLMS where you log
    in or create a **free** account and confirm the connection.
 3. Done. The site is registered in GuardLMS, site ownership is verified
@@ -97,18 +97,26 @@ daily push runs from Moodle cron; you can also run it on demand from Site
 administration > Server > Scheduled tasks. If pushes ever fail or the push key
 is about to expire, open the connect page and click **Reconnect to GuardLMS**.
 
-## Manual configuration (fallback)
+## Advanced settings (support and self-hosted only)
 
-For advanced setups you can still configure the plugin by hand:
+The settings page shows the Connect button and the connection status, nothing
+else. The connection internals are hidden so nobody can break a working setup by
+editing them. They are still reachable by URL:
 
-1. Open Site administration > Plugins > Local plugins > GuardLMS.
-2. Paste a website-bound inventory push key. You can mint one via the GuardLMS
-   API (`POST /api/websites/{id}/inventory-key`, requires an API key with the
-   `websites:write` scope) or ask GuardLMS support.
-3. Leave the base URL and endpoint path at their defaults unless GuardLMS support
-   tells you otherwise.
-4. Optionally enable "Include Moodle configuration" to also report selected
-   security and session settings.
+```
+/admin/settings.php?section=local_guardlms&mode=advanced
+```
+
+That page exposes the GuardLMS base URL, the push path, the daily-push toggle and
+the optional "Include Moodle configuration" toggle. The push key and the
+verification token are never editable: the connect flow writes them.
+
+To pin the base URL for good (self-hosted GuardLMS, or a development instance),
+set it in `config.php` instead, which also makes it read-only in advanced mode:
+
+```php
+$CFG->forced_plugin_settings['local_guardlms']['baseurl'] = 'https://guardlms.example.com';
+```
 
 ## Requirements
 
