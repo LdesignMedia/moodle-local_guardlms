@@ -116,6 +116,24 @@ class connect_manager {
     }
 
     /**
+     * Tear down the connection: drop the push key and clear the connection state.
+     *
+     * The base URL and the operational toggles are left alone, so reconnecting
+     * later does not need the advanced settings again. The verification token
+     * goes with the key: without a key the site no longer reports, so serving a
+     * stale ownership tag would be misleading.
+     */
+    public static function disconnect(): void {
+        unset_config('apikey', 'local_guardlms');
+        unset_config('verificationtoken', 'local_guardlms');
+        unset_config('websiteid', 'local_guardlms');
+        unset_config('connectedat', 'local_guardlms');
+        unset_config('keyexpiresat', 'local_guardlms');
+        unset_config('connectstate', 'local_guardlms');
+        unset_config('connectstateexpires', 'local_guardlms');
+    }
+
+    /**
      * Whether the plugin currently holds a push key from a completed connect.
      *
      * @return bool

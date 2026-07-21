@@ -49,9 +49,11 @@ if ($hassiteconfig) {
 
         $connected = \local_guardlms\local\connect_manager::is_connected();
 
-        // The button triggers the connect redirect directly; connect.php is a
-        // bare redirect endpoint. The status and the button live on this page.
+        // The buttons trigger the endpoints directly; connect.php is a bare
+        // redirect and disconnect.php a bare action. The status and both buttons
+        // live on this page.
         $connecturl = new moodle_url('/local/guardlms/connect.php', ['sesskey' => sesskey()]);
+        $disconnecturl = new moodle_url('/local/guardlms/disconnect.php', ['sesskey' => sesskey()]);
 
         // Branded heading: favicon before the plugin name. The image is built
         // with the full wwwroot so it resolves on subdirectory installs, and the
@@ -62,16 +64,22 @@ if ($hassiteconfig) {
             ['class' => 'local-guardlms-logo']
         );
 
-        // Connection status shown here on the settings page.
-        $status = '';
-        if ($connected) {
-            $status .= html_writer::div(get_string('connect:statusconnected', 'local_guardlms'), 'alert alert-success');
+        // One status line, green when connected and red when not. The WordPress
+        // plugin renders the same block, so both plugins look the same.
+        $status = html_writer::div(
+            html_writer::span(get_string('connect:statuslabel', 'local_guardlms')) . ' ' .
+            html_writer::span(
+                $connected
+                    ? get_string('connect:statusconnected', 'local_guardlms')
+                    : get_string('connect:statusdisconnected', 'local_guardlms'),
+                'local-guardlms-badge ' .
+                    ($connected ? 'local-guardlms-badge-connected' : 'local-guardlms-badge-disconnected')
+            ),
+            'local-guardlms-status'
+        );
 
+        if ($connected) {
             $details = [];
-            $websiteid = (int) get_config('local_guardlms', 'websiteid');
-            if ($websiteid) {
-                $details[] = get_string('connect:websiteid', 'local_guardlms', $websiteid);
-            }
             $connectedat = (int) get_config('local_guardlms', 'connectedat');
             if ($connectedat) {
                 $details[] = get_string('connect:connectedat', 'local_guardlms', userdate($connectedat));
@@ -92,14 +100,23 @@ if ($hassiteconfig) {
             $status .= html_writer::tag('p', get_string('connect:freeaccount', 'local_guardlms'));
         }
 
-        // A single Connect / Reconnect button in the GuardLMS brand colour.
-        $buttonlabel = $connected
-            ? get_string('connect:reconnectbutton', 'local_guardlms')
-            : get_string('connect:button', 'local_guardlms');
-        $status .= html_writer::div(
-            html_writer::link($connecturl, $buttonlabel, ['class' => 'btn local-guardlms-btn']),
-            'mt-2 mb-2'
+        // Connect / Reconnect in the GuardLMS brand colour, plus Disconnect once
+        // the site is connected.
+        $buttons = html_writer::link(
+            $connecturl,
+            $connected
+                ? get_string('connect:reconnectbutton', 'local_guardlms')
+                : get_string('connect:button', 'local_guardlms'),
+            ['class' => 'btn local-guardlms-btn']
         );
+        if ($connected) {
+            $buttons .= html_writer::link(
+                $disconnecturl,
+                get_string('connect:disconnectbutton', 'local_guardlms'),
+                ['class' => 'btn local-guardlms-btn-disconnect']
+            );
+        }
+        $status .= html_writer::div($buttons, 'mt-2 mb-2');
 
         $settings->add(new admin_setting_heading(
             'local_guardlms/header',
