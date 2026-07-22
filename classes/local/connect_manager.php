@@ -109,8 +109,17 @@ class connect_manager {
         }
         set_config('connectedat', time(), 'local_guardlms');
 
-        // The verification meta tag must be visible on the next page load.
-        \core\task\manager::queue_adhoc_task(new \local_guardlms\task\initial_push());
+        // Push straight away so the site shows up in GuardLMS while the admin is
+        // still looking at the screen. Waiting for cron would leave a freshly
+        // connected site empty for up to a day.
+        try {
+            pusher::push();
+        } catch (\Throwable $e) {
+            // A failed first push must never break the connect callback: the
+            // connection itself succeeded. Retry it through cron instead.
+            \core\task\manager::queue_adhoc_task(new \local_guardlms\task\initial_push());
+            debugging('GuardLMS initial push failed, queued for cron: ' . $e->getMessage(), DEBUG_DEVELOPER);
+        }
 
         \core\notification::success(get_string('connect:success', 'local_guardlms'));
     }
