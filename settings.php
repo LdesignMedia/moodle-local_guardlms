@@ -78,8 +78,8 @@ if ($hassiteconfig) {
             'local-guardlms-status'
         );
 
+        $details = [];
         if ($connected) {
-            $details = [];
             $connectedat = (int) get_config('local_guardlms', 'connectedat');
             if ($connectedat) {
                 $details[] = get_string('connect:connectedat', 'local_guardlms', userdate($connectedat));
@@ -91,9 +91,6 @@ if ($hassiteconfig) {
             $lastpush = (int) get_config('local_guardlms', 'lastpush');
             if ($lastpush) {
                 $details[] = get_string('connect:lastpush', 'local_guardlms', userdate($lastpush));
-            }
-            if ($details) {
-                $status .= html_writer::alist($details);
             }
         } else {
             $status .= html_writer::tag('p', get_string('connect:intro', 'local_guardlms'));
@@ -117,6 +114,12 @@ if ($hassiteconfig) {
             );
         }
         $status .= html_writer::div($buttons, 'mt-2 mb-2');
+
+        // Connection details sit under the button: the action comes first, the
+        // dates are reference information.
+        if ($details) {
+            $status .= html_writer::alist($details);
+        }
 
         $settings->add(new admin_setting_heading(
             'local_guardlms/header',

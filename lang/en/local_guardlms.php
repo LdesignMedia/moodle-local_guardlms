@@ -33,18 +33,18 @@ $string['connect:settingheading'] = 'Connect to GuardLMS';
 $string['connect:settingdesc'] = 'Connect this site to GuardLMS with one click. You only need a GuardLMS account (a free account is enough), no API keys to copy.';
 $string['connect:intro'] = 'Connecting registers this site with your GuardLMS account, verifies site ownership automatically, and sets up the daily inventory push, all in one click.';
 $string['connect:freeaccount'] = 'You only need a GuardLMS account; a free account is enough. If you are not logged in yet, you can log in or register during the connection.';
-$string['connect:button'] = 'Connect to GuardLMS';
+$string['connect:button'] = 'Connect';
 $string['connect:disconnectbutton'] = 'Disconnect';
 $string['connect:disconnected'] = 'This site is no longer connected to GuardLMS. It has stopped reporting.';
-$string['connect:reconnectbutton'] = 'Reconnect to GuardLMS';
+$string['connect:reconnectbutton'] = 'Reconnect';
 $string['connect:reconnectinfo'] = 'Reconnecting issues a fresh push key for this site. Use it if pushes fail or the key is about to expire.';
 $string['connect:statuslabel'] = 'Status:';
 $string['connect:statusconnected'] = 'Connected';
 $string['connect:statusdisconnected'] = 'Not connected';
-$string['connect:connectedat'] = 'Connected on: {$a}';
-$string['connect:keyexpires'] = 'Push key expires: {$a}';
-$string['connect:lastpush'] = 'Last successful push: {$a}';
-$string['connect:success'] = 'Your site is now connected to GuardLMS. The first inventory push has been queued.';
+$string['connect:connectedat'] = 'Connected at: {$a}';
+$string['connect:keyexpires'] = 'Expires at: {$a}';
+$string['connect:lastpush'] = 'Last push: {$a}';
+$string['connect:success'] = 'Your site is now connected to GuardLMS and its first inventory has been sent.';
 
 // Settings.
 $string['settings:advancedheading'] = 'Advanced settings';
