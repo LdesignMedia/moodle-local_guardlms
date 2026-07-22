@@ -60,7 +60,7 @@ class connect_manager {
         set_config('connectstate', $state, 'local_guardlms');
         set_config('connectstateexpires', time() + self::STATE_TTL, 'local_guardlms');
 
-        $baseurl = rtrim(trim((string) get_config('local_guardlms', 'baseurl')), '/');
+        $baseurl = config::baseurl();
 
         return new \moodle_url($baseurl . '/connect/moodle', [
             'siteurl' => $CFG->wwwroot,
@@ -90,7 +90,7 @@ class connect_manager {
             throw new \moodle_exception('error:connectstate', 'local_guardlms');
         }
 
-        $client = $this->client ?? new api_client((string) get_config('local_guardlms', 'baseurl'));
+        $client = $this->client ?? new api_client(config::baseurl());
         $data = $client->exchange($code, $CFG->wwwroot, $state);
 
         set_config('apikey', $data['token'], 'local_guardlms');
@@ -109,10 +109,37 @@ class connect_manager {
         }
         set_config('connectedat', time(), 'local_guardlms');
 
-        // The verification meta tag must be visible on the next page load.
-        \core\task\manager::queue_adhoc_task(new \local_guardlms\task\initial_push());
+        // Push straight away so the site shows up in GuardLMS while the admin is
+        // still looking at the screen. Waiting for cron would leave a freshly
+        // connected site empty for up to a day.
+        try {
+            pusher::push();
+        } catch (\Throwable $e) {
+            // A failed first push must never break the connect callback: the
+            // connection itself succeeded. Retry it through cron instead.
+            \core\task\manager::queue_adhoc_task(new \local_guardlms\task\initial_push());
+            debugging('GuardLMS initial push failed, queued for cron: ' . $e->getMessage(), DEBUG_DEVELOPER);
+        }
 
         \core\notification::success(get_string('connect:success', 'local_guardlms'));
+    }
+
+    /**
+     * Tear down the connection: drop the push key and clear the connection state.
+     *
+     * The base URL and the operational toggles are left alone, so reconnecting
+     * later does not need the advanced settings again. The verification token
+     * goes with the key: without a key the site no longer reports, so serving a
+     * stale ownership tag would be misleading.
+     */
+    public static function disconnect(): void {
+        unset_config('apikey', 'local_guardlms');
+        unset_config('verificationtoken', 'local_guardlms');
+        unset_config('websiteid', 'local_guardlms');
+        unset_config('connectedat', 'local_guardlms');
+        unset_config('keyexpiresat', 'local_guardlms');
+        unset_config('connectstate', 'local_guardlms');
+        unset_config('connectstateexpires', 'local_guardlms');
     }
 
     /**

@@ -38,17 +38,14 @@ class pusher {
     public static function push(): string {
         global $CFG;
 
-        $baseurl = trim((string) get_config('local_guardlms', 'baseurl'));
         $apikey = trim((string) get_config('local_guardlms', 'apikey'));
-        if ($baseurl === '' || $apikey === '') {
+        if ($apikey === '') {
             throw new \moodle_exception('error:notconfigured', 'local_guardlms');
         }
 
-        $pushpath = trim((string) get_config('local_guardlms', 'pushpath'));
-        if ($pushpath === '') {
-            $pushpath = '/api/externalpush/moodle';
-        }
-        $endpoint = rtrim($baseurl, '/') . '/' . ltrim($pushpath, '/');
+        // The base URL and push path fall back to their defaults in config, so a
+        // site that never touched the advanced settings still pushes to GuardLMS.
+        $endpoint = config::pushendpoint();
 
         $includeconfig = (bool) get_config('local_guardlms', 'sendconfig');
         $payload = collector::build_payload($includeconfig);

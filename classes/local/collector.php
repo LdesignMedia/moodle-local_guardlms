@@ -137,16 +137,133 @@ class collector {
             $webserver = $_SERVER['SERVER_SOFTWARE'] ?? null;
         }
 
-        return [
+        [$webservername, $webserverversion] = self::split_server_signature((string) $webserver);
+
+        // os_family, os and webserver stay as they were: an older GuardLMS keeps
+        // reading them while the split fields below are what CVE matching needs.
+        return array_merge([
             'os_family' => PHP_OS_FAMILY,
             'os' => PHP_OS,
             'hostname' => gethostname() ?: null,
             'webserver' => $webserver ?: null,
+            'webserver_name' => $webservername,
+            'webserver_version' => $webserverversion,
             // Which external session store the site uses (empty is the built-in
             // file/database default). A Redis or Memcached class here tells
             // GuardLMS an external service is in play beyond the loaded extensions.
             'sessionhandler' => self::session_handler(),
+        ], self::os_info());
+    }
+
+    /**
+     * Distribution level operating system detail.
+     *
+     * PHP only reports the kernel ("Linux"), which is not enough to match an OS
+     * against known vulnerabilities or an end-of-life date. On Linux the release
+     * is read from the os-release file, the standard the distributions publish.
+     * Reads only: no shell commands, so it also works where exec() is disabled.
+     *
+     * @return array
+     */
+    protected static function os_info(): array {
+        $info = [
+            'os_name' => PHP_OS_FAMILY,
+            'os_id' => strtolower(PHP_OS_FAMILY),
+            'os_version' => '',
+            'os_pretty' => '',
+            'kernel' => php_uname('r'),
+            'arch' => php_uname('m'),
         ];
+
+        $release = self::os_release_values();
+        if ($release) {
+            $info['os_name'] = $release['NAME'] ?? $info['os_name'];
+            $info['os_id'] = $release['ID'] ?? $info['os_id'];
+            $info['os_version'] = $release['VERSION_ID'] ?? '';
+            $info['os_pretty'] = $release['PRETTY_NAME'] ?? '';
+        } else if (PHP_OS_FAMILY === 'Darwin') {
+            // macOS has no os-release file; the Darwin kernel version is the only
+            // version PHP exposes without shelling out to sw_vers.
+            $info['os_name'] = 'macOS';
+            $info['os_id'] = 'macos';
+            $info['os_version'] = php_uname('r');
+        } else if (PHP_OS_FAMILY === 'Windows') {
+            $info['os_name'] = php_uname('s');
+            $info['os_id'] = 'windows';
+            $info['os_version'] = php_uname('r');
+        }
+
+        if ($info['os_pretty'] === '') {
+            $info['os_pretty'] = trim($info['os_name'] . ' ' . $info['os_version']);
+        }
+
+        return $info;
+    }
+
+    /**
+     * Parse /etc/os-release into key => value pairs.
+     *
+     * @return array Empty when the file is absent or unreadable.
+     */
+    protected static function os_release_values(): array {
+        $candidates = ['/etc/os-release', '/usr/lib/os-release'];
+        $values = [];
+
+        foreach ($candidates as $path) {
+            if (!is_readable($path)) {
+                continue;
+            }
+
+            $contents = @file_get_contents($path);
+            if ($contents === false) {
+                continue;
+            }
+
+            foreach (preg_split('/\R/', $contents) as $line) {
+                if (strpos($line, '=') === false || strpos(trim($line), '#') === 0) {
+                    continue;
+                }
+                [$key, $value] = explode('=', $line, 2);
+                $values[trim($key)] = trim(trim($value), "\"'");
+            }
+
+            if ($values) {
+                return $values;
+            }
+        }
+
+        return $values;
+    }
+
+    /**
+     * Split a web server signature into its product name and version.
+     *
+     * "Apache/2.4.68 (Debian)" becomes ['Apache', '2.4.68'], "nginx/1.24.0"
+     * becomes ['nginx', '1.24.0']. A signature without a version (some hosts
+     * suppress it) keeps the name and returns an empty version.
+     *
+     * @param string $signature Raw SERVER_SOFTWARE value.
+     * @return array{0: string, 1: string} Name and version, both possibly empty.
+     */
+    protected static function split_server_signature(string $signature): array {
+        $signature = trim($signature);
+        if ($signature === '') {
+            return ['', ''];
+        }
+
+        // Only the leading product token matters; the rest is "(Debian) PHP/8.2".
+        $product = strtok($signature, ' ');
+        if ($product === false) {
+            return ['', ''];
+        }
+
+        if (strpos($product, '/') === false) {
+            return [$product, ''];
+        }
+
+        [$name, $version] = explode('/', $product, 2);
+
+        return [$name, $version];
     }
 
     /**

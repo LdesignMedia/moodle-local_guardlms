@@ -40,11 +40,20 @@ if ($hassiteconfig) {
     $ADMIN->add('localplugins', $settings);
 
     if ($ADMIN->fulltree) {
+        // Advanced mode is deliberately URL only, so an end user never sees the
+        // connection internals: /admin/settings.php?section=local_guardlms&mode=advanced.
+        // The settings form posts back to a URL without the mode parameter, so the
+        // marker setting added below re-flags advanced mode on the save request.
+        $advanced = optional_param('mode', '', PARAM_ALPHA) === 'advanced'
+            || optional_param('guardlmsadv', 0, PARAM_BOOL);
+
         $connected = \local_guardlms\local\connect_manager::is_connected();
 
-        // The button triggers the connect redirect directly; connect.php is a
-        // bare redirect endpoint. The status and the button live on this page.
+        // The buttons trigger the endpoints directly; connect.php is a bare
+        // redirect and disconnect.php a bare action. The status and both buttons
+        // live on this page.
         $connecturl = new moodle_url('/local/guardlms/connect.php', ['sesskey' => sesskey()]);
+        $disconnecturl = new moodle_url('/local/guardlms/disconnect.php', ['sesskey' => sesskey()]);
 
         // Branded heading: favicon before the plugin name. The image is built
         // with the full wwwroot so it resolves on subdirectory installs, and the
@@ -55,16 +64,22 @@ if ($hassiteconfig) {
             ['class' => 'local-guardlms-logo']
         );
 
-        // Connection status shown here on the settings page.
-        $status = '';
-        if ($connected) {
-            $status .= html_writer::div(get_string('connect:statusconnected', 'local_guardlms'), 'alert alert-success');
+        // One status line, green when connected and red when not. The WordPress
+        // plugin renders the same block, so both plugins look the same.
+        $status = html_writer::div(
+            html_writer::span(get_string('connect:statuslabel', 'local_guardlms')) . ' ' .
+            html_writer::span(
+                $connected
+                    ? get_string('connect:statusconnected', 'local_guardlms')
+                    : get_string('connect:statusdisconnected', 'local_guardlms'),
+                'local-guardlms-badge ' .
+                    ($connected ? 'local-guardlms-badge-connected' : 'local-guardlms-badge-disconnected')
+            ),
+            'local-guardlms-status'
+        );
 
-            $details = [];
-            $websiteid = (int) get_config('local_guardlms', 'websiteid');
-            if ($websiteid) {
-                $details[] = get_string('connect:websiteid', 'local_guardlms', $websiteid);
-            }
+        $details = [];
+        if ($connected) {
             $connectedat = (int) get_config('local_guardlms', 'connectedat');
             if ($connectedat) {
                 $details[] = get_string('connect:connectedat', 'local_guardlms', userdate($connectedat));
@@ -77,22 +92,34 @@ if ($hassiteconfig) {
             if ($lastpush) {
                 $details[] = get_string('connect:lastpush', 'local_guardlms', userdate($lastpush));
             }
-            if ($details) {
-                $status .= html_writer::alist($details);
-            }
         } else {
             $status .= html_writer::tag('p', get_string('connect:intro', 'local_guardlms'));
             $status .= html_writer::tag('p', get_string('connect:freeaccount', 'local_guardlms'));
         }
 
-        // A single Connect / Reconnect button in the GuardLMS brand colour.
-        $buttonlabel = $connected
-            ? get_string('connect:reconnectbutton', 'local_guardlms')
-            : get_string('connect:button', 'local_guardlms');
-        $status .= html_writer::div(
-            html_writer::link($connecturl, $buttonlabel, ['class' => 'btn local-guardlms-btn']),
-            'mt-2 mb-2'
+        // Connect / Reconnect in the GuardLMS brand colour, plus Disconnect once
+        // the site is connected.
+        $buttons = html_writer::link(
+            $connecturl,
+            $connected
+                ? get_string('connect:reconnectbutton', 'local_guardlms')
+                : get_string('connect:button', 'local_guardlms'),
+            ['class' => 'btn local-guardlms-btn']
         );
+        if ($connected) {
+            $buttons .= html_writer::link(
+                $disconnecturl,
+                get_string('connect:disconnectbutton', 'local_guardlms'),
+                ['class' => 'btn local-guardlms-btn-disconnect']
+            );
+        }
+        $status .= html_writer::div($buttons, 'mt-2 mb-2');
+
+        // Connection details sit under the button: the action comes first, the
+        // dates are reference information.
+        if ($details) {
+            $status .= html_writer::alist($details);
+        }
 
         $settings->add(new admin_setting_heading(
             'local_guardlms/header',
@@ -100,21 +127,37 @@ if ($hassiteconfig) {
             $status
         ));
 
-        // GuardLMS base URL stays editable so an admin can point at their own
-        // GuardLMS instance. pushpath and apikey are connection internals written
-        // by the connect flow (connect_manager::complete_connect) and are not
-        // shown, so they cannot be hand-edited to a wrong endpoint or a replaced
-        // key. pushpath falls back to its default in pusher.php.
-        $settings->add(new admin_setting_configtext(
-            'local_guardlms/baseurl',
-            get_string('settings:baseurl', 'local_guardlms'),
-            get_string('settings:baseurl_desc', 'local_guardlms'),
-            'https://app.guardlms.com',
-            PARAM_URL
-        ));
+        // Everything below is advanced: an end user only needs the button above.
+        // The apikey and the verification token are connection internals written
+        // by the connect flow (connect_manager::complete_connect) and are never
+        // shown, so they cannot be hand-edited to a replaced key.
+        if ($advanced) {
+            $settings->add(new \local_guardlms\admin\setting_advanced_marker());
 
-        // Operational toggles only make sense once the site is connected.
-        if ($connected) {
+            $settings->add(new admin_setting_heading(
+                'local_guardlms/advancedheading',
+                get_string('settings:advancedheading', 'local_guardlms'),
+                html_writer::div(get_string('settings:advancedwarning', 'local_guardlms'), 'alert alert-warning')
+            ));
+
+            // Point the plugin at a different GuardLMS instance. Can also be pinned in
+            // config.php with $CFG->forced_plugin_settings['local_guardlms']['baseurl'].
+            $settings->add(new admin_setting_configtext(
+                'local_guardlms/baseurl',
+                get_string('settings:baseurl', 'local_guardlms'),
+                get_string('settings:baseurl_desc', 'local_guardlms'),
+                \local_guardlms\local\config::DEFAULT_BASEURL,
+                PARAM_URL
+            ));
+
+            $settings->add(new admin_setting_configtext(
+                'local_guardlms/pushpath',
+                get_string('settings:pushpath', 'local_guardlms'),
+                get_string('settings:pushpath_desc', 'local_guardlms'),
+                \local_guardlms\local\config::DEFAULT_PUSHPATH,
+                PARAM_PATH
+            ));
+
             $settings->add(new admin_setting_configcheckbox(
                 'local_guardlms/enabled',
                 get_string('settings:enabled', 'local_guardlms'),

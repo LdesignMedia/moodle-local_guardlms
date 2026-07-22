@@ -96,7 +96,10 @@ final class connect_manager_test extends \advanced_testcase {
         // The pending state is consumed.
         $this->assertFalse(get_config('local_guardlms', 'connectstate'));
 
-        // The initial push has been queued.
+        // Connecting pushes the inventory straight away (issue #7). The push
+        // cannot reach anything from a unit test, so what is asserted here is the
+        // fallback: the failure is swallowed and retried through cron.
+        $this->assertDebuggingCalled();
         $tasks = \core\task\manager::get_adhoc_tasks(\local_guardlms\task\initial_push::class);
         $this->assertCount(1, $tasks);
 

@@ -15,7 +15,11 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Plugin version and metadata for local_guardlms.
+ * GuardLMS disconnect endpoint.
+ *
+ * Clears the push key and the connection details, so the site stops reporting.
+ * A bare action endpoint: the Disconnect button on the plugin settings page
+ * sends the admin here and the page it returns to shows the new status.
  *
  * @package    local_guardlms
  * @copyright  2026 Luuk Verhoeven, ldesignmedia.nl <info@ldesignmedia.nl>
@@ -23,10 +27,23 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
+require(__DIR__ . '/../../config.php');
 
-$plugin->component = 'local_guardlms';
-$plugin->version = 2026072200;
-$plugin->requires = 2020061500; // Moodle 3.9.
-$plugin->maturity = MATURITY_ALPHA;
-$plugin->release = '1.3.0';
+use local_guardlms\local\connect_manager;
+
+require_login();
+$context = context_system::instance();
+require_capability('moodle/site:config', $context);
+require_sesskey();
+
+$PAGE->set_context($context);
+$PAGE->set_url(new moodle_url('/local/guardlms/disconnect.php'));
+
+connect_manager::disconnect();
+
+redirect(
+    new moodle_url('/admin/settings.php', ['section' => 'local_guardlms']),
+    get_string('connect:disconnected', 'local_guardlms'),
+    null,
+    \core\output\notification::NOTIFY_SUCCESS
+);

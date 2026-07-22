@@ -28,3 +28,39 @@
     border-color: #dc5304;
     color: #fff;
 }
+
+.local-guardlms-btn-disconnect.btn {
+    background-color: transparent;
+    border-color: #b32d2e;
+    color: #b32d2e;
+    margin-left: 8px;
+}
+
+.local-guardlms-btn-disconnect.btn:hover,
+.local-guardlms-btn-disconnect.btn:focus {
+    background-color: #b32d2e;
+    border-color: #b32d2e;
+    color: #fff;
+}
+
+/* One status line, mirrored by the WordPress plugin so both look the same. */
+.local-guardlms-status {
+    margin-bottom: 10px;
+}
+
+.local-guardlms-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.local-guardlms-badge-connected {
+    background-color: #d7f5df;
+    color: #0a6b31;
+}
+
+.local-guardlms-badge-disconnected {
+    background-color: #fcdada;
+    color: #a02020;
+}
