@@ -55,6 +55,8 @@ $string['settings:enabled'] = 'Enable daily push';
 $string['settings:enabled_desc'] = 'When enabled, the site reporting payload is sent to GuardLMS once a day.';
 $string['settings:baseurl'] = 'GuardLMS base URL';
 $string['settings:baseurl_desc'] = 'Base URL of your GuardLMS instance, for example https://app.guardlms.com. Leave the default unless you run a self-hosted GuardLMS.';
+$string['settings:siteurloverride'] = 'Site URL override';
+$string['settings:siteurloverride_desc'] = 'Optional. The site URL registered with GuardLMS and sent on every push. Leave empty to use this site\'s address ({$a}). Set an explicit value only if GuardLMS rejects pushes with a "siteurl does not match" error, for example on cloned, staging or reverse-proxied sites where the reported address differs from the one registered when you connected. Reconnect after changing this so the push key is reissued for the new URL.';
 $string['settings:sendconfig'] = 'Include Moodle configuration';
 $string['settings:sendconfig_desc'] = 'Optional. Also send selected security and session settings (such as the cookie policy) so GuardLMS can review how the site is configured. Off by default.';
 

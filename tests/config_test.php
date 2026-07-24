@@ -68,4 +68,37 @@ final class config_test extends \advanced_testcase {
             config::pushendpoint()
         );
     }
+
+    /**
+     * Without an override the site URL falls back to wwwroot.
+     */
+    public function test_siteurl_defaults_to_wwwroot(): void {
+        global $CFG;
+        $this->resetAfterTest();
+
+        $this->assertSame(rtrim($CFG->wwwroot, '/'), config::siteurl());
+    }
+
+    /**
+     * An explicit override replaces wwwroot and is trailing-slash trimmed.
+     */
+    public function test_siteurl_uses_override(): void {
+        $this->resetAfterTest();
+
+        set_config('siteurloverride', 'https://public.example.com/', 'local_guardlms');
+
+        $this->assertSame('https://public.example.com', config::siteurl());
+    }
+
+    /**
+     * A whitespace-only override is ignored in favour of wwwroot.
+     */
+    public function test_siteurl_ignores_blank_override(): void {
+        global $CFG;
+        $this->resetAfterTest();
+
+        set_config('siteurloverride', '   ', 'local_guardlms');
+
+        $this->assertSame(rtrim($CFG->wwwroot, '/'), config::siteurl());
+    }
 }

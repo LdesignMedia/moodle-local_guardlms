@@ -63,7 +63,7 @@ class connect_manager {
         $baseurl = config::baseurl();
 
         return new \moodle_url($baseurl . '/connect/moodle', [
-            'siteurl' => $CFG->wwwroot,
+            'siteurl' => config::siteurl(),
             'state' => $state,
             'callback' => $CFG->wwwroot . '/local/guardlms/callback.php',
         ]);
@@ -77,8 +77,6 @@ class connect_manager {
      * @throws \moodle_exception When the state is invalid/expired or GuardLMS rejects the exchange.
      */
     public function complete_connect(string $code, string $state): void {
-        global $CFG;
-
         $storedstate = (string) get_config('local_guardlms', 'connectstate');
         $expires = (int) get_config('local_guardlms', 'connectstateexpires');
 
@@ -91,7 +89,7 @@ class connect_manager {
         }
 
         $client = $this->client ?? new api_client(config::baseurl());
-        $data = $client->exchange($code, $CFG->wwwroot, $state);
+        $data = $client->exchange($code, config::siteurl(), $state);
 
         set_config('apikey', $data['token'], 'local_guardlms');
         set_config('enabled', 1, 'local_guardlms');
