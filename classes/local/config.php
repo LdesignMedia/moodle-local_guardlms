@@ -77,4 +77,22 @@ class config {
     public static function pushendpoint(): string {
         return self::baseurl() . self::pushpath();
     }
+
+    /**
+     * The site URL to register with, and report to, GuardLMS.
+     *
+     * Defaults to this site's wwwroot. Admins on cloned, proxied or
+     * multi-hostname sites can pin an explicit value via the siteurloverride
+     * setting so the URL registered during connect always matches the URL sent
+     * by the daily push, avoiding the "siteurl does not match" rejection.
+     *
+     * @return string Non-empty site URL, trailing slash trimmed.
+     */
+    public static function siteurl(): string {
+        global $CFG;
+
+        $override = trim((string) get_config('local_guardlms', 'siteurloverride'));
+
+        return rtrim($override !== '' ? $override : (string) $CFG->wwwroot, '/');
+    }
 }

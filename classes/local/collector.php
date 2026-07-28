@@ -62,11 +62,9 @@ class collector {
      * @return array Typed envelope ready to be JSON encoded.
      */
     public static function build_payload(bool $includeconfig = false): array {
-        global $CFG;
-
         $payload = [
             'platform' => 'moodle',
-            'siteurl' => (string) $CFG->wwwroot,
+            'siteurl' => config::siteurl(),
             'generatedtime' => time(),
             'moodle' => self::moodle_info(),
             'server' => self::server_info(),
