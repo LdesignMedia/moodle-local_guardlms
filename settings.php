@@ -127,6 +127,154 @@ if ($hassiteconfig) {
             $status
         ));
 
+        // Real-time monitoring. Deliberately NOT behind advanced mode: this is
+        // the user-facing opt-in, and a feature an admin cannot find is a
+        // feature that does not exist.
+        //
+        // The synchronous bootstrap below is gated on this plugin's section
+        // actually having been requested, NOT on $ADMIN->fulltree.
+        //
+        // fulltree does not mean "the admin asked for this page":
+        // admin_get_root($reload = false, $requirefulltree = true) defaults to
+        // true (lib/adminlib.php:8830), and admin/search.php:31,
+        // admin/category.php:40 and admin/settings.php:19 all call it bare. So
+        // fulltree is true while building the tree for admin search, for a
+        // category listing, and for every other plugin's settings page - and a
+        // 5s blocking POST would fire on all of them.
+        //
+        // Core reads this parameter as PARAM_SAFEDIR (admin/settings.php:6) and
+        // puts it back into $PAGE->url, so it is present on the save request
+        // too and the bootstrap still runs where it is wanted.
+        $sectionrequested = optional_param('section', '', PARAM_SAFEDIR) === 'local_guardlms';
+
+        if ($sectionrequested && $connected && \local_guardlms\local\sdk_config::should_bootstrap()) {
+            // Throttle first and unconditionally: a backend that hangs until the
+            // timeout must still consume the attempt, or every settings page
+            // view pays the full timeout again.
+            \local_guardlms\local\sdk_config::note_bootstrap_attempt();
+            \local_guardlms\local\sdk_client::resolve(
+                'fetch',
+                \local_guardlms\local\sdk_client::BOOTSTRAP_TIMEOUT
+            );
+        }
+
+        // Read the status after the bootstrap, so a backend that answered 404
+        // hides the section on this render rather than the next one.
+        $sdkstatus = \local_guardlms\local\sdk_config::status();
+
+        // A closure, not a function name. admin_setting::write_setting() guards
+        // the callback with is_callable() and skips it silently if the function
+        // is not loaded, and lib.php is only included for plugins declaring
+        // before_session_start or after_config. A name here would save the
+        // toggle and quietly never refresh. The closure reaches an autoloaded
+        // class, so it cannot be missing.
+        $sdkupdated = function (): void {
+            \local_guardlms\task\refresh_sdk_config::queue_if_connected();
+        };
+
+        if (!$sdkstatus['hidden']) {
+            // Row 2 only reaches here in its not-hidden form, where monitoring
+            // is still on against a backend that no longer supports it. That is
+            // a warning, not information: the site is loading third-party
+            // JavaScript the admin probably wants to stop.
+            $alertclass = 'alert alert-info';
+            if (in_array($sdkstatus['row'], [2, 4, 5, 7, 8], true)) {
+                $alertclass = 'alert alert-warning';
+            } else if ($sdkstatus['row'] === 0) {
+                $alertclass = 'alert alert-success';
+            }
+
+            // Exactly one headline, chosen by the §5.3 precedence chain.
+            $sdkdesc = html_writer::div(
+                get_string($sdkstatus['headline'], 'local_guardlms', $sdkstatus['headlinedata']),
+                $alertclass
+            );
+
+            // Advisories render in addition to the headline: a domain mismatch
+            // or a missing analytics entitlement is worth saying even on an
+            // otherwise healthy site.
+            foreach ($sdkstatus['advisories'] as $advisory) {
+                $sdkdesc .= html_writer::div(
+                    get_string($advisory['key'], 'local_guardlms', $advisory['data']),
+                    'alert alert-warning'
+                );
+            }
+
+            // Never an epoch and never blank, including before the first
+            // successful refresh.
+            $sdkdesc .= html_writer::tag(
+                'p',
+                \local_guardlms\local\sdk_config::last_refresh_text(),
+                ['class' => 'text-muted']
+            );
+
+            if ($connected) {
+                $sdkactions = html_writer::link(
+                    new moodle_url('/local/guardlms/sdkrefresh.php', ['sesskey' => sesskey()]),
+                    get_string('sdk:refreshnow', 'local_guardlms'),
+                    ['class' => 'btn local-guardlms-btn']
+                );
+
+                // The self-test only proves anything once something would
+                // actually be injected.
+                if (\local_guardlms\local\sdk_config::injection_allowed()) {
+                    $sdkactions .= html_writer::link(
+                        new moodle_url('/', ['guardlmsselftest' => 1]),
+                        get_string('sdk:testerror', 'local_guardlms'),
+                        ['class' => 'btn local-guardlms-btn-disconnect']
+                    );
+                }
+
+                $sdkdesc .= html_writer::div($sdkactions, 'mt-2 mb-2');
+            }
+
+            $settings->add(new admin_setting_heading(
+                'local_guardlms/realtimeheading',
+                get_string('settings:realtimeheading', 'local_guardlms'),
+                $sdkdesc
+            ));
+
+            if ($sdkstatus['toggledisabled']) {
+                $settings->add(new \local_guardlms\admin\setting_configcheckbox_disabled(
+                    'local_guardlms/sdkenabled',
+                    get_string('settings:sdkenabled', 'local_guardlms'),
+                    get_string('settings:sdkenabled_desc', 'local_guardlms'),
+                    0,
+                    'sdk:requires44'
+                ));
+            } else {
+                $sdkenabled = new admin_setting_configcheckbox(
+                    'local_guardlms/sdkenabled',
+                    get_string('settings:sdkenabled', 'local_guardlms'),
+                    get_string('settings:sdkenabled_desc', 'local_guardlms'),
+                    0
+                );
+                // Queue the refresh rather than fetching inline: a slow HTTP
+                // call must never block a settings save.
+                $sdkenabled->set_updatedcallback($sdkupdated);
+                $settings->add($sdkenabled);
+            }
+
+            if ($sdkstatus['analyticsdisabled']) {
+                $settings->add(new \local_guardlms\admin\setting_configcheckbox_disabled(
+                    'local_guardlms/sdkanalytics',
+                    get_string('settings:sdkanalytics', 'local_guardlms'),
+                    get_string('settings:sdkanalytics_desc', 'local_guardlms'),
+                    0,
+                    $sdkstatus['toggledisabled'] ? 'sdk:requires44' : 'sdk:analyticsnotinplan'
+                ));
+            } else {
+                $sdkanalytics = new admin_setting_configcheckbox(
+                    'local_guardlms/sdkanalytics',
+                    get_string('settings:sdkanalytics', 'local_guardlms'),
+                    get_string('settings:sdkanalytics_desc', 'local_guardlms'),
+                    0
+                );
+                $sdkanalytics->set_updatedcallback($sdkupdated);
+                $settings->add($sdkanalytics);
+            }
+        }
+
         // Everything below is advanced: an end user only needs the button above.
         // The apikey and the verification token are connection internals written
         // by the connect flow (connect_manager::complete_connect) and are never
