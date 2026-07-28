@@ -37,5 +37,26 @@ function local_guardlms_before_standard_html_head(): string {
         return '';
     }
 
+    // Only the meta tag. The SDK is deliberately not injected on Moodle below
+    // 4.4: this legacy callback was removed in 4.4, so a site old enough to
+    // reach it is a site the real-time feature does not support, and the
+    // settings page says so rather than pretending the toggle worked.
     return \local_guardlms\local\head_injector::meta_tag();
+}
+
+/**
+ * Queue an SDK configuration refresh after a real-time monitoring setting changed.
+ *
+ * Registered with set_updatedcallback() on both toggles. The refresh is queued
+ * rather than performed inline so a slow or unreachable GuardLMS can never
+ * block a settings save.
+ *
+ * @param string $name The setting that changed, unused: both toggles want the same refresh.
+ */
+function local_guardlms_sdk_setting_updated(string $name): void {
+    if (!\local_guardlms\local\connect_manager::is_connected()) {
+        return;
+    }
+
+    \local_guardlms\task\refresh_sdk_config::queue();
 }

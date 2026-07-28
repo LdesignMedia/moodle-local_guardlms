@@ -109,6 +109,13 @@ class connect_manager {
         }
         set_config('connectedat', time(), 'local_guardlms');
 
+        // The exchange already carried the SDK key, so a site that connects
+        // today never needs a second round trip to switch real-time monitoring
+        // on. An older GuardLMS simply omits the block.
+        if (!empty($data['sdk']) && is_array($data['sdk'])) {
+            sdk_config::store_payload($data['sdk']);
+        }
+
         // Push straight away so the site shows up in GuardLMS while the admin is
         // still looking at the screen. Waiting for cron would leave a freshly
         // connected site empty for up to a day.
@@ -130,9 +137,25 @@ class connect_manager {
      * The base URL and the operational toggles are left alone, so reconnecting
      * later does not need the advanced settings again. The verification token
      * goes with the key: without a key the site no longer reports, so serving a
-     * stale ownership tag would be misleading.
+     * stale ownership tag would be misleading. The SDK key goes with it for the
+     * same reason, and for one more: it is a live ingest credential.
+     *
+     * @param sdk_client|null $sdkclient Client override for tests.
      */
-    public static function disconnect(): void {
+    public static function disconnect(?sdk_client $sdkclient = null): void {
+        // Revoke before the push key is dropped: the revoke call authenticates
+        // with that key, so clearing it first would leave the SDK key valid on
+        // the GuardLMS side with no way left to revoke it. A failure here must
+        // not stop the local teardown - an admin who clicked Disconnect gets a
+        // disconnected site either way, and the key expires on its own.
+        try {
+            sdk_client::resolve('revoke', sdk_client::DEFAULT_TIMEOUT, $sdkclient);
+        } catch (\Throwable $e) {
+            debugging('GuardLMS SDK key revoke failed during disconnect: ' . $e->getMessage(), DEBUG_DEVELOPER);
+        }
+
+        sdk_config::clear();
+
         unset_config('apikey', 'local_guardlms');
         unset_config('verificationtoken', 'local_guardlms');
         unset_config('websiteid', 'local_guardlms');

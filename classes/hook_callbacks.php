@@ -32,7 +32,12 @@ use local_guardlms\local\head_injector;
  */
 class hook_callbacks {
     /**
-     * Add the GuardLMS ownership verification meta tag to the page head.
+     * Add the GuardLMS head content: ownership meta tag and real-time SDK tags.
+     *
+     * Both are appended from this one callback rather than a second hook
+     * registration. They land in the same place in the same order, and a
+     * separate registration would only add a second dispatch and a second
+     * chance for the two to drift apart.
      *
      * @param \core\hook\output\before_standard_head_html_generation $hook The hook instance.
      */
@@ -40,8 +45,9 @@ class hook_callbacks {
         \core\hook\output\before_standard_head_html_generation $hook
     ): void {
         $tag = head_injector::meta_tag();
-        if ($tag !== '') {
-            $hook->add_html($tag);
+        $sdktag = head_injector::sdk_tags();
+        if ($tag !== '' || $sdktag !== '') {
+            $hook->add_html($tag . $sdktag);
         }
     }
 }
