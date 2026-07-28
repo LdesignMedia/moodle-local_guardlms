@@ -423,10 +423,30 @@ final class sdk_tags_test extends \advanced_testcase {
 
         $tags = head_injector::sdk_tags_for($this->env());
 
-        // Exactly two script elements: the src tag and the init block.
+        // Exactly two script elements: the src tag and the init block. An
+        // unescaped closing tag from the payload would make these 3.
         $this->assertSame(2, substr_count($tags, '<script'), 'A third script element means the payload broke out.');
         $this->assertSame(2, substr_count($tags, '</script>'));
-        $this->assertStringNotContainsString('window.pwned', $tags);
+        $this->assertStringNotContainsString($hostile, $tags, 'The hostile sequence must never appear unescaped.');
+
+        // JSON_HEX_TAG hex-escapes the angle brackets, so the payload survives
+        // as inert text inside a JSON string rather than as markup. Assert the
+        // escaped form is actually present: without this, a change that
+        // silently DROPPED the value would satisfy every assertion above while
+        // quietly losing configuration.
+        //
+        // The expectation is derived from the same encoder flags the injector
+        // uses rather than hardcoded, so it stays correct if that flag set
+        // changes. Deliberately NOT asserting the absence of 'window.pwned' as
+        // a bare substring: that tests for this fixture's wording rather than
+        // for the escape, so it fails on a correctly neutralised payload and
+        // passes on a breakout that happened to use different text.
+        $encoded = json_encode(
+            '</script>',
+            JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES
+        );
+        $escapedclose = trim((string) $encoded, '"');
+        $this->assertStringContainsString($escapedclose, $tags, 'JSON_HEX_TAG must have escaped the payload.');
     }
 
     /**
