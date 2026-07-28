@@ -151,6 +151,16 @@ if ($hassiteconfig) {
         // hides the section on this render rather than the next one.
         $sdkstatus = \local_guardlms\local\sdk_config::status();
 
+        // A closure, not a function name. admin_setting::write_setting() guards
+        // the callback with is_callable() and skips it silently if the function
+        // is not loaded, and lib.php is only included for plugins declaring
+        // before_session_start or after_config. A name here would save the
+        // toggle and quietly never refresh. The closure reaches an autoloaded
+        // class, so it cannot be missing.
+        $sdkupdated = function (): void {
+            \local_guardlms\task\refresh_sdk_config::queue_if_connected();
+        };
+
         if (!$sdkstatus['hidden']) {
             $alertclass = 'alert alert-info';
             if (in_array($sdkstatus['row'], [4, 5, 7, 8], true)) {
@@ -226,7 +236,7 @@ if ($hassiteconfig) {
                 );
                 // Queue the refresh rather than fetching inline: a slow HTTP
                 // call must never block a settings save.
-                $sdkenabled->set_updatedcallback('local_guardlms_sdk_setting_updated');
+                $sdkenabled->set_updatedcallback($sdkupdated);
                 $settings->add($sdkenabled);
             }
 
@@ -245,7 +255,7 @@ if ($hassiteconfig) {
                     get_string('settings:sdkanalytics_desc', 'local_guardlms'),
                     0
                 );
-                $sdkanalytics->set_updatedcallback('local_guardlms_sdk_setting_updated');
+                $sdkanalytics->set_updatedcallback($sdkupdated);
                 $settings->add($sdkanalytics);
             }
         }

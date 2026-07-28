@@ -164,4 +164,51 @@ final class upgrade_test extends \advanced_testcase {
 
         $this->assertSame(1, $this->queued_refresh_tasks());
     }
+
+    /**
+     * The settings callback queues a refresh only for a connected site.
+     */
+    public function test_settings_callback_queues_only_when_connected(): void {
+        $this->resetAfterTest();
+
+        refresh_sdk_config::queue_if_connected();
+        $this->assertSame(0, $this->queued_refresh_tasks(), 'A disconnected site has no credential to refresh with.');
+
+        set_config('apikey', 'push-key', 'local_guardlms');
+        set_config('connectedat', time(), 'local_guardlms');
+
+        refresh_sdk_config::queue_if_connected();
+        $this->assertSame(1, $this->queued_refresh_tasks());
+    }
+
+    /**
+     * The settings callback is never registered by function name.
+     *
+     * admin_setting::write_setting() guards its updated callback with
+     * is_callable() and skips it *silently* when the function is not loaded.
+     * lib.php is only included for plugins declaring before_session_start or
+     * after_config, which this plugin does not, so a name-based callback would
+     * save the toggle, report success, and never queue a refresh. Nothing would
+     * surface the failure.
+     *
+     * Asserted at the source level because that is where the choice is made;
+     * building the admin tree to inspect the registered value would execute the
+     * settings page's synchronous bootstrap and issue a real HTTP request.
+     */
+    public function test_the_updated_callback_is_not_registered_by_name(): void {
+        global $CFG;
+
+        $source = file_get_contents($CFG->dirroot . '/local/guardlms/settings.php');
+        $this->assertNotFalse($source);
+        $this->assertStringContainsString('set_updatedcallback', $source, 'The guard is pointless if nothing registers one.');
+
+        $this->assertDoesNotMatchRegularExpression(
+            '/set_updatedcallback\(\s*[\'"]/',
+            $source,
+            'A string callback would be skipped silently when lib.php is not loaded.'
+        );
+
+        // What the closure reaches must exist without lib.php being included.
+        $this->assertTrue(is_callable([refresh_sdk_config::class, 'queue_if_connected']));
+    }
 }

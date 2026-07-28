@@ -65,4 +65,23 @@ class refresh_sdk_config extends adhoc_task {
     public static function queue(): void {
         \core\task\manager::queue_adhoc_task(new self(), true);
     }
+
+    /**
+     * Queue a refresh if the site is connected, otherwise do nothing.
+     *
+     * This is the settings-page updated callback. It lives on an autoloaded
+     * class rather than in lib.php on purpose: admin_setting::write_setting()
+     * guards the callback with is_callable() and skips it *silently* when the
+     * function is not loaded, and lib.php is only included for plugins that
+     * declare before_session_start or after_config - which this one does not.
+     * A function-name callback here would therefore be a no-op that reported
+     * success, with the toggle appearing to save while no refresh ever ran.
+     */
+    public static function queue_if_connected(): void {
+        if (!connect_manager::is_connected()) {
+            return;
+        }
+
+        self::queue();
+    }
 }

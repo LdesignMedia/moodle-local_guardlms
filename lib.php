@@ -44,19 +44,8 @@ function local_guardlms_before_standard_html_head(): string {
     return \local_guardlms\local\head_injector::meta_tag();
 }
 
-/**
- * Queue an SDK configuration refresh after a real-time monitoring setting changed.
- *
- * Registered with set_updatedcallback() on both toggles. The refresh is queued
- * rather than performed inline so a slow or unreachable GuardLMS can never
- * block a settings save.
- *
- * @param string $name The setting that changed, unused: both toggles want the same refresh.
- */
-function local_guardlms_sdk_setting_updated(string $name): void {
-    if (!\local_guardlms\local\connect_manager::is_connected()) {
-        return;
-    }
-
-    \local_guardlms\task\refresh_sdk_config::queue();
-}
+// The real-time monitoring settings callback deliberately does NOT live here.
+// admin_setting::write_setting() guards its updated callback with is_callable()
+// and skips it silently when the function is not loaded, and this file is only
+// included for plugins that declare before_session_start or after_config. See
+// \local_guardlms\task\refresh_sdk_config::queue_if_connected().
