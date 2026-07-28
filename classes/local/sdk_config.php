@@ -369,6 +369,13 @@ class sdk_config {
      * @return bool
      */
     public static function should_bootstrap(): bool {
+        // A behat site must never call the live backend: the fetch would hit
+        // the real GuardLMS API with the test site's push key, and its error
+        // response would overwrite the very state the scenarios assert.
+        if (defined('BEHAT_SITE_RUNNING') && BEHAT_SITE_RUNNING) {
+            return false;
+        }
+
         if (self::has_payload() || self::backend_unsupported()) {
             return false;
         }

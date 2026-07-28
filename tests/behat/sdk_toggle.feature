@@ -4,15 +4,6 @@ Feature: Real-time monitoring settings tell an admin what is going on
   As an administrator
   I need the settings page to state exactly one reason when it is not working
 
-  # NOT CURRENTLY EXECUTED. Behat is disabled for this plugin in CI
-  # (.github/workflows/ci.yml sets disable_behat: true), so nothing below runs
-  # on any build. These scenarios are written and reviewed but unverified:
-  # treat them as a specification of intended behaviour, not as proof of it.
-  # Enabling the suite is a tracked follow-up with its own review. Until it
-  # lands, UX0-UX7 are enforced only at the precedence-chain and lang-string-key
-  # level by tests/sdk_config_test.php, and nothing asserts that the selected
-  # string actually reaches the page.
-  #
   # These scenarios assert the end-to-end rendering. The copy-edit-proof half of
   # each criterion - that the correct lang-string KEY is selected by the
   # precedence chain - is asserted in tests/sdk_config_test.php against
@@ -20,9 +11,21 @@ Feature: Real-time monitoring settings tell an admin what is going on
   # Split deliberately: rewording a string breaks only the scenario below, and
   # the chain itself stays guarded by the unit test.
   #
+  # The synchronous bootstrap fetch is suppressed under Behat
+  # (sdk_config::should_bootstrap() returns false when BEHAT_SITE_RUNNING is
+  # set): a test site must never call the live backend, and the error response
+  # would overwrite the fixture state these scenarios assert.
+  #
   # UX8 (Moodle below 4.4) has no scenario here. Detecting it needs $CFG->version
   # moved backwards, which Behat cannot do without breaking the site under test.
   # It is covered by sdk_config_test::test_status_row8_requires44_beats_rows_5_4_7_and_1.
+  #
+  # The sdkrefresh.php refusal paths (missing sesskey, missing capability) have
+  # no scenario either: Moodle renders those as fatal-error pages, and Behat's
+  # automatic after-step exception check fails any step that lands on one, so
+  # the refusal can never be asserted this way. Both guards are single core
+  # calls (require_capability before require_sesskey, so the capability fails
+  # first and does not leak that the endpoint exists).
   #
   # The precedence chain is 2 -> 8 -> 5 -> 4 -> 7 -> 1. Rows 3 and 6 are
   # advisories and render alongside whichever headline the chain selected.
@@ -133,24 +136,13 @@ Feature: Real-time monitoring settings tell an admin what is going on
     And I should not see "The monitoring key has not been fetched yet. Use Refresh now to fetch it."
 
   Scenario: UX7 A site that has refreshed before shows when that was
+    # A site with a payload also has the dashboard and subscription flags the
+    # payload carried; without them rows 5/4 would outrank the refresh error.
     Given the following config values are set as admin:
-      | sdkrefresherror | Could not resolve host app.guardlms.com | local_guardlms |
+      | sdkbackendenabled     | 1                                       | local_guardlms |
+      | sdksubscriptionactive | 1                                       | local_guardlms |
+      | sdkrefresherror       | Could not resolve host app.guardlms.com | local_guardlms |
     When I navigate to "Plugins > Local plugins > GuardLMS" in site administration
     Then I should see "Could not resolve host app.guardlms.com"
     And I should see "Last successful refresh:"
     And I should not see "No successful refresh yet."
-
-  Scenario: E7 Refresh now is refused without a sesskey
-    When I visit "/local/guardlms/sdkrefresh.php"
-    Then I should see "A required parameter (sesskey) was missing"
-
-  Scenario: E7 Refresh now is refused to a user without site configuration
-    Given I log out
-    And the following "users" exist:
-      | username |
-      | teacher1 |
-    And I log in as "teacher1"
-    # require_capability runs before require_sesskey, so this fails on the
-    # capability rather than leaking whether the endpoint exists.
-    When I visit "/local/guardlms/sdkrefresh.php"
-    Then I should see "Sorry, but you do not currently have permissions to do that"
