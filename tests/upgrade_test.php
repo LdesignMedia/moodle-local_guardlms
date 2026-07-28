@@ -211,4 +211,49 @@ final class upgrade_test extends \advanced_testcase {
         // What the closure reaches must exist without lib.php being included.
         $this->assertTrue(is_callable([refresh_sdk_config::class, 'queue_if_connected']));
     }
+
+    /**
+     * F3: the blocking bootstrap only runs when this section was requested.
+     *
+     * $ADMIN->fulltree does NOT mean "the admin asked for this page".
+     * admin_get_root($reload = false, $requirefulltree = true) defaults to true
+     * (lib/adminlib.php:8830), and admin/search.php:31, admin/category.php:40
+     * and admin/settings.php:19 all call it bare - so fulltree is true while
+     * building the tree for admin search, for a category listing, and for every
+     * other plugin's settings page. A 5s blocking POST gated only on fulltree
+     * would fire on all of them.
+     *
+     * Asserted at the source level because the alternative - building the admin
+     * tree in-process to observe whether a request is issued - would itself
+     * execute settings.php and make the outbound call this guard exists to
+     * prevent.
+     */
+    public function test_the_blocking_bootstrap_is_gated_on_the_requested_section(): void {
+        global $CFG;
+
+        $source = file_get_contents($CFG->dirroot . '/local/guardlms/settings.php');
+        $this->assertNotFalse($source);
+
+        // The section gate exists and names this plugin.
+        $this->assertMatchesRegularExpression(
+            "/optional_param\(\s*'section'.*?===\s*'local_guardlms'/s",
+            $source,
+            'The bootstrap must be gated on this plugin section actually being requested.'
+        );
+
+        // And the blocking call is downstream of that gate, not of fulltree alone.
+        $gateat = strpos($source, "optional_param('section'");
+        $callat = strpos($source, 'sdk_client::resolve(');
+        $this->assertNotFalse($gateat);
+        $this->assertNotFalse($callat);
+        $this->assertLessThan($callat, $gateat, 'The section gate must precede the blocking call.');
+
+        // The superseded claim must not survive in a comment: it told a reader
+        // the guard did something it never did.
+        $this->assertStringNotContainsString(
+            'where fulltree is false',
+            $source,
+            'That comment asserted fulltree rules out admin search, which is false.'
+        );
+    }
 }

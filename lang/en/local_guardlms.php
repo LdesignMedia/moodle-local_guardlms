@@ -69,6 +69,8 @@ $string['settings:sdkanalytics_desc'] = 'Optional. Also send anonymous page view
 $string['sdk:statusactive'] = 'Real-time monitoring is active. Errors from this site are being reported to GuardLMS.';
 $string['sdk:statusready'] = 'This site is ready for real-time monitoring. Tick the box below and save to switch it on.';
 $string['sdk:statusnokey'] = 'The monitoring key has not been fetched yet. Use Refresh now to fetch it.';
+$string['sdk:statusnotconnected'] = 'Connect this site to GuardLMS first. Real-time monitoring needs the connection to fetch its key.';
+$string['sdk:backendunsupportedactive'] = 'This GuardLMS instance no longer offers real-time monitoring, but monitoring is still switched on here and the GuardLMS script is still being loaded on every page. Untick the box below and save to stop it.';
 $string['sdk:statusnosubscription'] = 'No active GuardLMS subscription - real-time data is not being collected.';
 $string['sdk:statusdashboardoff'] = 'Real-time monitoring is turned off in the GuardLMS dashboard.';
 $string['sdk:statusrefresherror'] = 'The last attempt to reach GuardLMS failed: {$a}';
@@ -95,10 +97,12 @@ $string['error:connectrejected'] = 'GuardLMS rejected the connection: {$a}';
 $string['error:sdkrefreshfailed'] = 'Could not refresh the real-time monitoring settings: {$a}';
 
 // Privacy.
-$string['privacy:metadata:guardlms'] = 'With real-time monitoring enabled, this plugin loads GuardLMS JavaScript that reports browser errors from this site to GuardLMS. No name, email address or user ID is ever sent, and clicks and form entries are never recorded.';
+$string['privacy:metadata:guardlms'] = 'With real-time monitoring enabled, this plugin loads GuardLMS JavaScript that reports browser errors from this site to GuardLMS. If page analytics is also enabled, it reports a record of every page view as well, not only pages where an error happened. No name, email address or user ID is ever sent, and clicks and form entries are never recorded.';
 $string['privacy:metadata:guardlms:pageurl'] = 'The address of the page the error happened on. Session keys and similar tokens are removed before it is sent.';
 $string['privacy:metadata:guardlms:referrerurl'] = 'The address of the page that linked to the page the error happened on.';
 $string['privacy:metadata:guardlms:useragent'] = 'The browser and operating system reported by the browser, plus the window size.';
 $string['privacy:metadata:guardlms:sessionid'] = 'An anonymous identifier that groups errors from one browsing session together. It is not the Moodle user ID and cannot be traced back to an account by GuardLMS.';
 $string['privacy:metadata:guardlms:errordetails'] = 'The error message, the script and line it came from, the stack trace, and a short trail of preceding page loads, network requests and console messages.';
+$string['privacy:metadata:guardlms:pageviews'] = 'Only when page analytics is enabled: a record of each page visited, sent on every page view rather than only when something goes wrong.';
+$string['privacy:metadata:guardlms:scrolldepth'] = 'Only when page analytics is enabled: how far down each page was scrolled.';
 $string['privacy:metadata:guardlms:ipaddress'] = 'The IP address the report is sent from. The plugin does not include it in the report, but the receiving server sees it as part of the connection.';

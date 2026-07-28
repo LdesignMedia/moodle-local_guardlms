@@ -90,10 +90,43 @@ final class privacy_provider_test extends \advanced_testcase {
             'errordetails',
             'ipaddress',
             'pageurl',
+            'pageviews',
             'referrerurl',
+            'scrolldepth',
             'sessionid',
             'useragent',
         ], $fields);
+    }
+
+    /**
+     * The analytics telemetry is declared, not just the error reporting.
+     *
+     * With sdkanalytics on, head_injector emits an analytics block that reports
+     * on every page view rather than only when something fails. A declaration
+     * naming only the error fields would understate the plugin to a DPO - the
+     * difference between occasional fault reports and continuous behavioural
+     * telemetry - so the two analytics fields have to be present and their
+     * strings have to say the collection is page-wide.
+     */
+    public function test_analytics_collection_is_declared(): void {
+        $fields = $this->external_location()->get_privacy_fields();
+
+        $this->assertArrayHasKey('pageviews', $fields);
+        $this->assertArrayHasKey('scrolldepth', $fields);
+
+        foreach (['pageviews', 'scrolldepth'] as $field) {
+            $text = get_string($fields[$field], 'local_guardlms');
+            $this->assertStringContainsStringIgnoringCase(
+                'analytics',
+                $text,
+                "The {$field} declaration must say it only applies when analytics is enabled."
+            );
+        }
+
+        // The summary a DPO reads first must mention page views too, not only
+        // errors, or the detail below it comes as a surprise.
+        $summary = get_string($this->external_location()->get_summary(), 'local_guardlms');
+        $this->assertStringContainsStringIgnoringCase('page view', $summary);
     }
 
     /**

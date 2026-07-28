@@ -184,6 +184,165 @@ final class sdk_config_test extends \advanced_testcase {
     }
 
     /**
+     * F1: a hostile backend message is escaped where it enters storage.
+     *
+     * The message is chosen by the GuardLMS backend and every consumer renders
+     * it as HTML without escaping - html_writer::div() concatenates, redirect()
+     * prints with triple braces, and get_string() substitutes {$a} with a plain
+     * str_replace. Escaping on store is what closes all three at once.
+     *
+     * This fires with the feature switched OFF, on a site that never enabled
+     * it, which is why it is not covered by trusting the backend for the script
+     * URL: that requires opt-in plus a key, this requires neither.
+     */
+    public function test_a_hostile_refresh_error_is_escaped_on_store(): void {
+        $this->resetAfterTest();
+
+        $hostile = '<img src=x onerror=alert(1)>';
+        sdk_config::record_refresh_error($hostile);
+
+        $stored = sdk_config::refresh_error();
+
+        $this->assertStringNotContainsString('<img', $stored, 'Raw markup must never reach storage.');
+        $this->assertStringNotContainsString('onerror=', $stored);
+        $this->assertSame(s($hostile), $stored);
+
+        // The escaped text still renders as the original characters, so the
+        // admin can read what the backend actually said.
+        $this->assertStringContainsString('img src=x', html_entity_decode($stored, ENT_QUOTES));
+    }
+
+    /**
+     * F1: the same escaping holds through the status chain that renders it.
+     */
+    public function test_a_hostile_refresh_error_stays_escaped_through_status(): void {
+        global $CFG;
+
+        $this->resetAfterTest();
+        $CFG->version = sdk_config::HOOKS_API_VERSION;
+
+        sdk_config::record_refresh_error('</div><script>alert(1)</script>');
+
+        $status = sdk_config::status();
+
+        $this->assertSame(7, $status['row']);
+        $this->assertStringNotContainsString('<script', (string) $status['headlinedata']);
+        $this->assertStringNotContainsString('</div>', (string) $status['headlinedata']);
+    }
+
+    /**
+     * F1: backend-supplied domain names are escaped in the mismatch advisory.
+     */
+    public function test_hostile_allowed_domains_are_escaped_in_the_advisory(): void {
+        global $CFG;
+
+        $this->resetAfterTest();
+        $CFG->version = sdk_config::HOOKS_API_VERSION;
+
+        sdk_config::store_payload($this->payload([
+            'allowed_domains' => ['<script>alert(1)</script>', 'ok.example.com'],
+            'allowed_domains_match' => false,
+        ]));
+
+        $advisories = array_column(sdk_config::status()['advisories'], 'data', 'key');
+        $this->assertArrayHasKey('sdk:domainmismatch', $advisories);
+
+        $allowed = $advisories['sdk:domainmismatch']->allowed;
+        $this->assertStringNotContainsString('<script', $allowed);
+        $this->assertStringContainsString('ok.example.com', $allowed, 'Benign hosts must still be readable.');
+    }
+
+    /**
+     * F2: a backend that stops offering the feature must not strip the toggle.
+     *
+     * record_backend_unsupported() leaves the stored payload alone, so the SDK
+     * keeps injecting from it. Hiding the section - which is right when nothing
+     * is being injected - would leave third-party JavaScript loading on every
+     * page with no control left to stop it.
+     */
+    public function test_row2_keeps_the_controls_when_monitoring_is_on(): void {
+        $this->resetAfterTest();
+
+        $this->set_up_healthy();
+        $this->assertTrue(sdk_config::is_enabled());
+        $this->assertTrue(sdk_config::injection_allowed());
+
+        sdk_config::record_backend_unsupported();
+
+        $status = sdk_config::status();
+
+        $this->assertFalse($status['hidden'], 'Hiding this would remove the only way to switch injection off.');
+        $this->assertSame(2, $status['row']);
+        $this->assertSame('sdk:backendunsupportedactive', $status['headline']);
+        $this->assertFalse($status['toggledisabled'], 'The admin must be able to untick it.');
+
+        // Injection continues deliberately: one failed refresh must not
+        // silently kill a working install.
+        $this->assertTrue(sdk_config::injection_allowed());
+    }
+
+    /**
+     * F2: with monitoring off, row 2 still hides the section entirely.
+     */
+    public function test_row2_still_hides_the_section_when_monitoring_is_off(): void {
+        $this->resetAfterTest();
+
+        $this->set_up_healthy();
+        set_config('sdkenabled', 0, 'local_guardlms');
+        sdk_config::record_backend_unsupported();
+
+        $status = sdk_config::status();
+
+        $this->assertTrue($status['hidden'], 'Nothing is injecting and nothing is actionable.');
+        $this->assertSame(2, $status['row']);
+        $this->assertSame('', $status['headline']);
+        $this->assertFalse(sdk_config::injection_allowed());
+    }
+
+    /**
+     * F2: turning the toggle off in that state actually stops the injection.
+     */
+    public function test_the_admin_can_switch_injection_off_after_a_404(): void {
+        $this->resetAfterTest();
+
+        $this->set_up_healthy();
+        sdk_config::record_backend_unsupported();
+        $this->assertTrue(sdk_config::injection_allowed());
+
+        // What the rendered, still-present checkbox does when unticked.
+        set_config('sdkenabled', 0, 'local_guardlms');
+
+        $this->assertFalse(sdk_config::injection_allowed(), 'Unticking must stop the script loading.');
+    }
+
+    /**
+     * F4: a never-connected site is told to connect, not to use a missing link.
+     *
+     * settings.php only renders Refresh now for a connected site, so row 1's
+     * usual sentence points at a control that is not on the page.
+     */
+    public function test_row1_tells_a_disconnected_site_to_connect(): void {
+        global $CFG;
+
+        $this->resetAfterTest();
+        $CFG->version = sdk_config::HOOKS_API_VERSION;
+
+        unset_config('apikey', 'local_guardlms');
+        unset_config('connectedat', 'local_guardlms');
+
+        $status = sdk_config::status();
+
+        $this->assertSame(1, $status['row']);
+        $this->assertSame('sdk:statusnotconnected', $status['headline']);
+
+        // And a connected site still gets the Refresh now wording.
+        set_config('apikey', 'push-key', 'local_guardlms');
+        set_config('connectedat', time(), 'local_guardlms');
+
+        $this->assertSame('sdk:statusnokey', sdk_config::status()['headline']);
+    }
+
+    /**
      * A failed refresh leaves the last good payload in place.
      */
     public function test_refresh_error_does_not_disturb_the_stored_payload(): void {

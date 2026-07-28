@@ -131,12 +131,23 @@ if ($hassiteconfig) {
         // the user-facing opt-in, and a feature an admin cannot find is a
         // feature that does not exist.
         //
-        // The synchronous bootstrap below sits inside if ($ADMIN->fulltree) by
-        // construction. settings.php is also executed during admin-tree
-        // construction on unrelated admin requests - admin search,
-        // admin_get_root() - where fulltree is false; an unguarded blocking
-        // call there would stall pages the admin never asked about.
-        if ($connected && \local_guardlms\local\sdk_config::should_bootstrap()) {
+        // The synchronous bootstrap below is gated on this plugin's section
+        // actually having been requested, NOT on $ADMIN->fulltree.
+        //
+        // fulltree does not mean "the admin asked for this page":
+        // admin_get_root($reload = false, $requirefulltree = true) defaults to
+        // true (lib/adminlib.php:8830), and admin/search.php:31,
+        // admin/category.php:40 and admin/settings.php:19 all call it bare. So
+        // fulltree is true while building the tree for admin search, for a
+        // category listing, and for every other plugin's settings page - and a
+        // 5s blocking POST would fire on all of them.
+        //
+        // Core reads this parameter as PARAM_SAFEDIR (admin/settings.php:6) and
+        // puts it back into $PAGE->url, so it is present on the save request
+        // too and the bootstrap still runs where it is wanted.
+        $sectionrequested = optional_param('section', '', PARAM_SAFEDIR) === 'local_guardlms';
+
+        if ($sectionrequested && $connected && \local_guardlms\local\sdk_config::should_bootstrap()) {
             // Throttle first and unconditionally: a backend that hangs until the
             // timeout must still consume the attempt, or every settings page
             // view pays the full timeout again.

@@ -62,12 +62,20 @@ class provider implements core_userlist_provider, metadata_provider, request_pro
         // receiving server observes the source IP at the transport layer
         // regardless, and declaring what the third party can see is the honest
         // reading of the obligation.
+        // pageviews and scrolldepth are declared because the optional analytics
+        // block changes what is sent and when: with it enabled the SDK reports
+        // on EVERY page view, not only when an error occurs. Declaring only the
+        // error fields would understate the plugin to a data protection
+        // officer - the difference between occasional fault reports and
+        // continuous behavioural telemetry.
         return $collection->add_external_location_link('guardlms', [
             'pageurl' => 'privacy:metadata:guardlms:pageurl',
             'referrerurl' => 'privacy:metadata:guardlms:referrerurl',
             'useragent' => 'privacy:metadata:guardlms:useragent',
             'sessionid' => 'privacy:metadata:guardlms:sessionid',
             'errordetails' => 'privacy:metadata:guardlms:errordetails',
+            'pageviews' => 'privacy:metadata:guardlms:pageviews',
+            'scrolldepth' => 'privacy:metadata:guardlms:scrolldepth',
             'ipaddress' => 'privacy:metadata:guardlms:ipaddress',
         ], 'privacy:metadata:guardlms');
     }

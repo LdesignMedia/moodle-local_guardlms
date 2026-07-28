@@ -428,10 +428,22 @@ class sdk_config {
     /**
      * Record a failed refresh without disturbing the last good payload.
      *
+     * The message is escaped here, where untrusted text enters plugin storage,
+     * because it can carry a string chosen by the GuardLMS backend and every
+     * consumer renders it as HTML: settings.php through html_writer::div(),
+     * which concatenates its contents without escaping, and sdkrefresh.php
+     * through redirect(), whose notification template prints the message with
+     * triple-brace (unescaped) output. get_string() is no help either - it
+     * substitutes {$a} with a plain str_replace.
+     *
+     * Escaping on store rather than at each render is deliberate: a future
+     * third consumer cannot reintroduce the hole by forgetting, and this is
+     * the single choke point through which all three error paths pass.
+     *
      * @param string $message Human readable failure reason shown to the admin.
      */
     public static function record_refresh_error(string $message): void {
-        set_config('sdkrefresherror', $message, self::COMPONENT);
+        set_config('sdkrefresherror', s($message), self::COMPONENT);
     }
 
     /**
@@ -515,11 +527,28 @@ class sdk_config {
             'analyticsdisabled' => false,
         ];
 
-        // Row 2 - the backend predates the feature. Say nothing at all.
+        // Row 2 - the backend does not offer the feature.
         if (self::backend_unsupported()) {
-            $status['hidden'] = true;
+            if (!self::is_enabled()) {
+                // Nothing is being injected and there is nothing the admin can
+                // act on, so say nothing at all.
+                $status['hidden'] = true;
+                $status['row'] = 2;
+                $status['headline'] = '';
+
+                return $status;
+            }
+
+            // Monitoring is switched on, so the SDK is still loading on every
+            // page from the payload already stored. Hiding the section here
+            // would take away the only control for turning that off, leaving
+            // third-party JavaScript running with no way to stop it - which is
+            // how a backend that starts answering 404 would strand a live site.
+            // Injection is deliberately NOT suppressed: one failed refresh must
+            // not silently kill a working install. Say what is happening and
+            // leave the toggle usable.
             $status['row'] = 2;
-            $status['headline'] = '';
+            $status['headline'] = 'sdk:backendunsupportedactive';
 
             return $status;
         }
@@ -534,9 +563,14 @@ class sdk_config {
         if ($haspayload && !self::allowed_domains_match()) {
             $status['advisories'][] = [
                 'key' => 'sdk:domainmismatch',
+                // Both values are escaped for the same reason as the refresh
+                // error: allowed_domains() is backend-supplied, and the string
+                // is interpolated by get_string() and rendered inside a div,
+                // neither of which escapes. The separator is ours, so each
+                // element is escaped before the implode rather than after.
                 'data' => (object) [
-                    'allowed' => implode(', ', self::allowed_domains()),
-                    'actual' => self::site_host(),
+                    'allowed' => implode(', ', array_map('s', self::allowed_domains())),
+                    'actual' => s(self::site_host()),
                 ],
             ];
         }
@@ -578,10 +612,15 @@ class sdk_config {
             return $status;
         }
 
-        // Row 1 - nothing fetched yet.
+        // Row 1 - nothing fetched yet. The two cases need different sentences:
+        // settings.php only renders the Refresh now link for a connected site,
+        // so telling a disconnected admin to use it points at a control that is
+        // not on the page. Connecting is the actual next step there.
         if (self::key() === '') {
             $status['row'] = 1;
-            $status['headline'] = 'sdk:statusnokey';
+            $status['headline'] = connect_manager::is_connected()
+                ? 'sdk:statusnokey'
+                : 'sdk:statusnotconnected';
 
             return $status;
         }
