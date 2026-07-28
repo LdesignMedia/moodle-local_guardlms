@@ -26,9 +26,12 @@
 namespace local_guardlms\privacy;
 
 use core_privacy\local\metadata\collection;
+use core_privacy\local\metadata\provider as metadata_provider;
 use core_privacy\local\request\approved_contextlist;
 use core_privacy\local\request\approved_userlist;
 use core_privacy\local\request\contextlist;
+use core_privacy\local\request\core_userlist_provider;
+use core_privacy\local\request\plugin\provider as request_provider;
 use core_privacy\local\request\userlist;
 
 /**
@@ -47,10 +50,7 @@ use core_privacy\local\request\userlist;
  * breadcrumbs are off, so no click or form selectors are collected; and
  * collectUserIp is false. See head_injector::sdk_init_config().
  */
-class provider implements
-    \core_privacy\local\metadata\provider,
-    \core_privacy\local\request\plugin\provider,
-    \core_privacy\local\request\core_userlist_provider {
+class provider implements core_userlist_provider, metadata_provider, request_provider {
     /**
      * Describe the data transmitted to GuardLMS.
      *
@@ -58,7 +58,7 @@ class provider implements
      * @return collection
      */
     public static function get_metadata(collection $collection): collection {
-        // ipaddress is declared even though collectUserIp is false: the
+        // The ipaddress field is declared even though collectUserIp is false: the
         // receiving server observes the source IP at the transport layer
         // regardless, and declaring what the third party can see is the honest
         // reading of the obligation.

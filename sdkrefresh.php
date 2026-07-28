@@ -52,7 +52,7 @@ if (sdk_client::resolve('fetch')) {
     );
 }
 
-// resolve() recorded the reason. Show it here rather than a generic failure, so
+// The resolve() call recorded the reason. Show it rather than a generic failure, so
 // the admin does not have to hunt for it on the page they are being sent to.
 $reason = sdk_config::refresh_error();
 if ($reason === '') {

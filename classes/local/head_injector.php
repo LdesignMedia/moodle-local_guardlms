@@ -30,6 +30,13 @@ namespace local_guardlms\local;
  */
 class head_injector {
     /**
+     * @var string Charset declaration emitted ahead of the SDK scripts.
+     *
+     * See sdk_tags_for() for why this is here rather than left to core.
+     */
+    public const CHARSET_META = '<meta charset="utf-8">' . "\n";
+
+    /**
      * Build the meta tag HTML, or an empty string when not applicable.
      *
      * @return string
@@ -91,13 +98,23 @@ class head_injector {
      * :771 - later - and cannot be called from inside head generation anyway,
      * because the head is already being written by then.
      *
-     * Ordering caveat, recorded rather than fixed: core appends its own
-     * <meta http-equiv="Content-Type" ... charset=utf-8> to the same hook at
-     * :718, after plugin callbacks, so this block precedes the charset
-     * declaration. That is pre-existing for the meta tag and new for a script,
-     * which is why the emitted block is kept compact - a src tag plus minified
-     * JSON - so the charset meta stays inside the first 1024 bytes that HTML5
-     * character-set sniffing looks at.
+     * Ordering caveat, and why this emits its own charset meta. Core appends
+     * its own <meta http-equiv="Content-Type" ... charset=utf-8> to the same
+     * hook at :718, after plugin callbacks, so everything here precedes the
+     * charset declaration and pushes it further into the head. HTML5 only
+     * sniffs the first 1024 bytes for it. Measured, this block is 1151 bytes
+     * with analytics enabled and 1018 without, so keeping it "compact enough"
+     * is not a guard - it is already over budget, and one added ignoreErrors
+     * entry would put the no-analytics case over too. Declaring utf-8 here,
+     * ahead of the scripts, removes the dependency on the block's size for 29
+     * bytes: the first declaration wins, core's later one is an identical
+     * duplicate, and no future config growth can reintroduce the problem.
+     *
+     * This is belt and braces rather than a live bug fix: Moodle also sends
+     * Content-Type: text/html; charset=utf-8 as an HTTP header
+     * (lib/setuplib.php:2174), which takes precedence over any in-document
+     * meta. The in-document declaration is what a saved or offline copy of the
+     * page has to rely on.
      *
      * @param array $env Request environment from current_request_env().
      * @return string
@@ -141,10 +158,14 @@ class head_injector {
             JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES
         );
 
+        // Declared before the scripts, so the charset is settled inside the
+        // sniffing window no matter how large the payload below grows.
+        $tags = self::CHARSET_META;
+
         // No crossorigin attribute: it would require the GuardLMS host to send
         // Access-Control-Allow-Origin, and a host that does not would have the
         // script blocked outright rather than merely reporting opaque traces.
-        $tags = '<script src="' . s($url) . '"></script>' . "\n";
+        $tags .= '<script src="' . s($url) . '"></script>' . "\n";
 
         // The guard matters: if the bundle fails to load, an unguarded
         // GuardLMS.init would throw a ReferenceError on every page of the site
@@ -171,7 +192,7 @@ class head_injector {
             return '';
         }
 
-        // https only. The SDK is third-party JavaScript executing on every page
+        // HTTPS only. The SDK is third-party JavaScript executing on every page
         // of the site; served over http it is trivially replaceable in transit.
         if (strncasecmp($url, 'https://', 8) !== 0) {
             return '';
@@ -208,7 +229,7 @@ class head_injector {
             'ignoreErrors' => sdk_config::ignore_errors(),
         ];
 
-        // batchInterval is deliberately absent: its stored value has drifted
+        // The batchInterval option is deliberately absent: its stored value drifted
         // three ways across the backend and is enforced nowhere, so emitting it
         // could only regress flush latency from the SDK's 2s default.
         //

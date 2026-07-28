@@ -52,7 +52,7 @@ class refresh_sdk_config extends adhoc_task {
             return;
         }
 
-        // resolve() has already recorded why, and the settings page renders it.
+        // The resolve() call already recorded why, and the settings page renders it.
         // Not raising here is deliberate: a failed refresh must not put the
         // task into the failure/backoff cycle, because the next scheduled run
         // would retry it anyway and an unreachable backend is not a defect.
