@@ -255,6 +255,59 @@ final class sdk_tags_test extends \advanced_testcase {
     }
 
     /**
+     * With analytics active the key set is the full canonical §4.1 set.
+     *
+     * The canonical set is locked in the SDK repo's README, but that repo's
+     * structural test compares the README against its own constant and has no
+     * access to this one. It catches README drift, not plugin drift. This is
+     * the only guard on what this plugin actually emits.
+     */
+    public function test_emitted_config_matches_the_canonical_set_with_analytics(): void {
+        $this->resetAfterTest();
+        $this->set_up_injectable();
+        set_config('sdkanalytics', 1, 'local_guardlms');
+
+        $this->assertSame([
+            'apiKey',
+            'endpoint',
+            'appVersion',
+            'releaseStage',
+            'sampleRate',
+            'maxBreadcrumbs',
+            'maxErrorsPerMinute',
+            'collectUserIp',
+            'interactionBreadcrumbsEnabled',
+            'enabledBreadcrumbTypes',
+            'redactedKeys',
+            'ignoreErrors',
+            'analytics',
+        ], array_keys(head_injector::sdk_init_config()));
+    }
+
+    /**
+     * The redaction list is exactly the canonical one, in order.
+     *
+     * Asserted as a whole rather than only spot-checking sesskey: the list is a
+     * full replacement of the SDK's defaults, so a dropped entry is a silent
+     * leak with nothing else in the system to catch it.
+     */
+    public function test_redacted_keys_are_exactly_the_canonical_list(): void {
+        $this->resetAfterTest();
+        $this->set_up_injectable();
+
+        $this->assertSame([
+            'password',
+            'secret',
+            'token',
+            'apiKey',
+            'api_key',
+            'authorization',
+            'sesskey',
+            'nonce',
+        ], head_injector::sdk_init_config()['redactedKeys']);
+    }
+
+    /**
      * §4.1: batchInterval is never emitted.
      *
      * Its stored value drifted three ways across the backend and is enforced

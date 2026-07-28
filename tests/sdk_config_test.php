@@ -461,25 +461,102 @@ final class sdk_config_test extends \advanced_testcase {
     }
 
     /**
-     * §5.3 row 1 is what a fresh, healthy, unfetched site sees.
+     * A connected site that never refreshed reports no key, never dashboard off.
      *
-     * Specifically not row 4 or row 5: those are backend assertions, and before
-     * any payload arrives their config values are false only because nothing has
-     * been written yet. Reading that as "your subscription is inactive" would be
-     * a lie told to every newly connected site.
+     * The trap the literal precedence chain sets. Row 5 outranks row 1, and
+     * both sdkbackendenabled and sdksubscriptionactive default to 0, so a site
+     * that has simply never fetched would be told "Real-time monitoring is
+     * turned off in the GuardLMS dashboard" - a confident diagnosis the plugin
+     * has no evidence for, sending the admin to a dashboard setting that is
+     * very likely fine, when the true state is "no key fetched yet".
+     *
+     * Before a successful refresh those flags mean *unknown*, not *off*, which
+     * is why rows 3, 4, 5 and 6 are gated on sdkrefreshedat > 0. A vague right
+     * answer beats a confident wrong one, which is the whole point of §5.3.
      */
-    public function test_status_row1_no_key_on_a_fresh_site(): void {
+    public function test_a_site_that_never_refreshed_reports_no_key_not_dashboard_off(): void {
         global $CFG;
 
         $this->resetAfterTest();
         $CFG->version = sdk_config::HOOKS_API_VERSION;
+
+        // A connected site that has never had a successful refresh. Nothing is
+        // stored, so every backend-asserted flag reads false by default - the
+        // exact condition that produces the wrong sentence.
+        set_config('apikey', 'push-key-from-connect', 'local_guardlms');
+        set_config('connectedat', time(), 'local_guardlms');
+
+        $this->assertFalse(sdk_config::has_payload());
+        $this->assertFalse(sdk_config::backend_enabled(), 'The trap only exists while this defaults to false.');
+        $this->assertFalse(sdk_config::subscription_active());
 
         $status = sdk_config::status();
 
         $this->assertSame(1, $status['row']);
         $this->assertSame('sdk:statusnokey', $status['headline']);
         $this->assertFalse($status['hidden']);
+
+        // The three sentences the plugin has no evidence for.
+        $this->assertNotSame('sdk:statusdashboardoff', $status['headline']);
+        $this->assertNotSame('sdk:statusnosubscription', $status['headline']);
         $this->assertSame([], $status['advisories'], 'Nothing is known about the plan yet, so nothing is claimed.');
+    }
+
+    /**
+     * Once a payload has arrived, the same flags are believed.
+     *
+     * The other half of the gate: suppressing rows 4 and 5 before a refresh
+     * must not suppress them afterwards, or the states they exist to report
+     * would never render at all.
+     */
+    public function test_the_same_flags_are_believed_once_a_payload_exists(): void {
+        global $CFG;
+
+        $this->resetAfterTest();
+        $CFG->version = sdk_config::HOOKS_API_VERSION;
+
+        sdk_config::store_payload($this->payload(['enabled' => false]));
+
+        $this->assertTrue(sdk_config::has_payload());
+        $this->assertSame(5, sdk_config::status()['row']);
+        $this->assertSame('sdk:statusdashboardoff', sdk_config::status()['headline']);
+    }
+
+    /**
+     * §5.3 row 7 must not suppress injection.
+     *
+     * Only rows 4 and 5 suppress. Going dark because one refresh timed out
+     * would reintroduce exactly the silence this design exists to remove: the
+     * site would stop reporting errors precisely when something is wrong.
+     */
+    public function test_a_failed_refresh_does_not_stop_injection(): void {
+        $this->resetAfterTest();
+
+        $this->set_up_healthy();
+        $this->assertTrue(sdk_config::injection_allowed());
+
+        sdk_config::record_refresh_error('connection refused');
+
+        $this->assertSame(7, sdk_config::status()['row'], 'The admin is told the refresh failed.');
+        $this->assertTrue(
+            sdk_config::injection_allowed(),
+            'A failed refresh must not stop collection: the last good payload is still valid.'
+        );
+    }
+
+    /**
+     * Rows 4 and 5 are the two that do suppress injection.
+     */
+    public function test_rows_4_and_5_suppress_injection(): void {
+        $this->resetAfterTest();
+
+        $this->set_up_healthy();
+        set_config('sdksubscriptionactive', 0, 'local_guardlms');
+        $this->assertFalse(sdk_config::injection_allowed(), 'Row 4 suppresses collection.');
+
+        $this->set_up_healthy();
+        set_config('sdkbackendenabled', 0, 'local_guardlms');
+        $this->assertFalse(sdk_config::injection_allowed(), 'Row 5 suppresses collection.');
     }
 
     /**

@@ -224,6 +224,17 @@ class head_injector {
             // option identifiers; combined with pageUrl they reconstruct a
             // learner's answers.
             'interactionBreadcrumbsEnabled' => false,
+            // FULL REPLACEMENTS, not merges. The SDK applies options with
+            // Object.assign (sdk/src/index.js:218), so passing either of these
+            // overwrites the SDK's own default array outright. A breadcrumb
+            // type or a redaction key added to the SDK defaults in a later
+            // release will therefore never reach this plugin - both lists have
+            // to be revisited by hand whenever those defaults change.
+            //
+            // That matters most for redactedKeys: sesskey appears in nearly
+            // every Moodle URL and matches none of the SDK's own defaults, so
+            // if this list drifts from the plan's canonical set the CSRF token
+            // ships inside pageUrl, sourceFile and stackTrace on every error.
             'enabledBreadcrumbTypes' => sdk_config::ENABLED_BREADCRUMB_TYPES,
             'redactedKeys' => sdk_config::REDACTED_KEYS,
             'ignoreErrors' => sdk_config::ignore_errors(),
