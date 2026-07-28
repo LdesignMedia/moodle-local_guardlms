@@ -173,8 +173,12 @@ if ($hassiteconfig) {
         };
 
         if (!$sdkstatus['hidden']) {
+            // Row 2 only reaches here in its not-hidden form, where monitoring
+            // is still on against a backend that no longer supports it. That is
+            // a warning, not information: the site is loading third-party
+            // JavaScript the admin probably wants to stop.
             $alertclass = 'alert alert-info';
-            if (in_array($sdkstatus['row'], [4, 5, 7, 8], true)) {
+            if (in_array($sdkstatus['row'], [2, 4, 5, 7, 8], true)) {
                 $alertclass = 'alert alert-warning';
             } else if ($sdkstatus['row'] === 0) {
                 $alertclass = 'alert alert-success';

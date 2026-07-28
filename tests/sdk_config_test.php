@@ -203,13 +203,18 @@ final class sdk_config_test extends \advanced_testcase {
 
         $stored = sdk_config::refresh_error();
 
-        $this->assertStringNotContainsString('<img', $stored, 'Raw markup must never reach storage.');
-        $this->assertStringNotContainsString('onerror=', $stored);
+        // Assert the security property - no raw angle bracket survives, so
+        // nothing can open a tag - rather than the absence of the payload's
+        // wording. s() escapes & < > " ' and NOT '=', so 'onerror=' is still
+        // present as inert text; asserting its absence would test this
+        // fixture's phrasing and fail on correctly escaped output.
+        $this->assertStringNotContainsString('<', $stored, 'No raw angle bracket may survive.');
+        $this->assertStringNotContainsString('>', $stored);
         $this->assertSame(s($hostile), $stored);
 
-        // The escaped text still renders as the original characters, so the
-        // admin can read what the backend actually said.
-        $this->assertStringContainsString('img src=x', html_entity_decode($stored, ENT_QUOTES));
+        // Escaped, not stripped: the admin can still read what the backend
+        // actually said. This is what separates escaping from sanitising.
+        $this->assertSame($hostile, html_entity_decode($stored, ENT_QUOTES | ENT_HTML401));
     }
 
     /**
