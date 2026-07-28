@@ -306,6 +306,17 @@ if ($hassiteconfig) {
                 PARAM_PATH
             ));
 
+            // Pin the site URL registered with, and reported to, GuardLMS. Empty
+            // means use this site's wwwroot. Needed on cloned/proxied sites where
+            // the reported address differs from the one registered at connect.
+            $settings->add(new admin_setting_configtext(
+                'local_guardlms/siteurloverride',
+                get_string('settings:siteurloverride', 'local_guardlms'),
+                get_string('settings:siteurloverride_desc', 'local_guardlms', $CFG->wwwroot),
+                '',
+                PARAM_URL
+            ));
+
             $settings->add(new admin_setting_configcheckbox(
                 'local_guardlms/enabled',
                 get_string('settings:enabled', 'local_guardlms'),

@@ -68,6 +68,22 @@ final class connect_manager_test extends \advanced_testcase {
     }
 
     /**
+     * The siteurl override is registered in place of wwwroot when set.
+     */
+    public function test_start_connect_uses_siteurl_override(): void {
+        $this->resetAfterTest();
+
+        set_config('baseurl', 'https://app.guardlms.example', 'local_guardlms');
+        set_config('siteurloverride', 'https://public.example.com/', 'local_guardlms');
+
+        $manager = new connect_manager();
+        $url = $manager->start_connect();
+
+        // The override is sent trailing-slash trimmed as the registered siteurl.
+        $this->assertSame('https://public.example.com', $url->param('siteurl'));
+    }
+
+    /**
      * A successful callback stores the push key and connection metadata.
      */
     public function test_complete_connect_stores_configuration(): void {
