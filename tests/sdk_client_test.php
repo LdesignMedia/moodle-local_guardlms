@@ -299,8 +299,17 @@ final class sdk_client_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->set_up_connected();
 
+        // A distinct key already held, so "unchanged" is distinguishable from
+        // "never set" - otherwise this would pass against an implementation
+        // that stored the payload's key.
+        set_config('sdkkey', 'glms_' . str_repeat('z', 56), 'local_guardlms');
+
         $this->assertTrue(sdk_client::resolve('revoke', 5, new testable_sdk_client(200, $this->success_body())));
 
-        $this->assertSame('', sdk_config::key(), 'A revoke response must never re-store a key.');
+        $this->assertSame(
+            'glms_' . str_repeat('z', 56),
+            sdk_config::key(),
+            'A revoke response must never re-store the key from its body.'
+        );
     }
 }

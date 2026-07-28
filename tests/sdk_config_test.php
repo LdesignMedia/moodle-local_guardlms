@@ -593,6 +593,24 @@ final class sdk_config_test extends \advanced_testcase {
     }
 
     /**
+     * A Moodle that ignores db/hooks.php never counts as injectable.
+     *
+     * The settings page tells these sites the toggle has no effect; this is
+     * what keeps that promise true no matter which caller asks.
+     */
+    public function test_injection_is_refused_below_moodle_44(): void {
+        global $CFG;
+
+        $this->resetAfterTest();
+
+        $this->set_up_healthy();
+        $this->assertTrue(sdk_config::injection_allowed());
+
+        $CFG->version = 2023100900;
+        $this->assertFalse(sdk_config::injection_allowed());
+    }
+
+    /**
      * Analytics needs the plan entitlement and the admin's opt-in.
      */
     public function test_analytics_active_needs_both_the_plan_and_the_opt_in(): void {

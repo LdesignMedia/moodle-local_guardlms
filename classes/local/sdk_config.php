@@ -471,7 +471,13 @@ class sdk_config {
      * @return bool
      */
     public static function injection_allowed(): bool {
-        return self::is_enabled()
+        // The version check is unreachable through today's only caller - below
+        // 4.4 the hook never fires - but it is what makes this method mean what
+        // its name says. Without it, wiring sdk_tags() into the legacy lib.php
+        // callback would inject on exactly the sites whose settings page says
+        // the toggle has no effect.
+        return self::moodle_supports_injection()
+            && self::is_enabled()
             && self::backend_enabled()
             && self::subscription_active()
             && self::key() !== ''
