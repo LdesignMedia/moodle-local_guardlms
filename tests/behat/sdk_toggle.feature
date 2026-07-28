@@ -4,6 +4,15 @@ Feature: Real-time monitoring settings tell an admin what is going on
   As an administrator
   I need the settings page to state exactly one reason when it is not working
 
+  # NOT CURRENTLY EXECUTED. Behat is disabled for this plugin in CI
+  # (.github/workflows/ci.yml sets disable_behat: true), so nothing below runs
+  # on any build. These scenarios are written and reviewed but unverified:
+  # treat them as a specification of intended behaviour, not as proof of it.
+  # Enabling the suite is a tracked follow-up with its own review. Until it
+  # lands, UX0-UX7 are enforced only at the precedence-chain and lang-string-key
+  # level by tests/sdk_config_test.php, and nothing asserts that the selected
+  # string actually reaches the page.
+  #
   # These scenarios assert the end-to-end rendering. The copy-edit-proof half of
   # each criterion - that the correct lang-string KEY is selected by the
   # precedence chain - is asserted in tests/sdk_config_test.php against
