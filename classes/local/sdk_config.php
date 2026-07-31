@@ -49,7 +49,7 @@ class sdk_config {
      * emitted appVersion is load-bearing for the backend's platform alert
      * (it matches ^(wordpress|moodle)-) and must not drift silently.
      */
-    public const PLUGIN_RELEASE = '1.4.0';
+    public const PLUGIN_RELEASE = '1.5.0';
 
     /** @var int Moodle version that introduced the Hooks API (4.4). Below this nothing is injected. */
     public const HOOKS_API_VERSION = 2024042200;
@@ -664,7 +664,7 @@ class sdk_config {
     }
 
     /**
-     * The appVersion string the SDK reports, e.g. moodle-4.5.2/local_guardlms-1.4.0.
+     * The appVersion string the SDK reports, e.g. moodle-4.5.2/local_guardlms-1.5.0.
      *
      * The backend's platform alert matches ^(wordpress|moodle)-, so the leading
      * segment is a wire contract and not cosmetic.
