@@ -11,9 +11,10 @@ A daily scheduled task builds a payload and sends it to the configured GuardLMS
 endpoint, authenticated with a bearer API key. The payload is a typed envelope so
 sections can grow over time:
 
-- `moodle`: release, version number, branch and every installed plugin as its
+- `moodle`: release, version number, branch, every installed plugin as its
   frankenstyle component name, version, release, display name, standard/third
-  party flag and enabled state
+  party flag and enabled state, plus the updates Moodle itself reports as
+  available for each of them
 - `server`: operating system, hostname and webserver software
 - `php`: PHP version, SAPI, loaded `php.ini`, memory limit, max execution time,
   upload and post size limits, timezone and the loaded extensions
@@ -22,6 +23,32 @@ sections can grow over time:
 
 Plugin versions are reported with the raw values exactly as Moodle records them,
 because GuardLMS matches CVEs on the component name and version.
+
+### Available updates
+
+Update information comes from Moodle's own update checker, so it is the same
+list an admin sees under Site administration > Plugins > Plugins overview —
+never a guess made by comparing version strings elsewhere.
+
+That checker only reads the response cached by its last fetch. On a site whose
+cron is broken, or where automatic checking is switched off, the cache is empty
+or months old, and reporting it as-is would tell GuardLMS "no updates" when the
+truth is "nobody looked". So the daily task refreshes the data itself whenever
+the cache is older than 24 hours, and reports honestly when it cannot:
+
+- `moodle.updatecheck` describes the state of the check: whether it is
+  `enabled`, when it was `lastfetched`, whether the data is `stale`, and any
+  `fetcherror` from the refresh attempt.
+- Each plugin's `updates` key is **absent** when the data is stale — meaning
+  "nobody checked" — and **present but empty** when the plugin was checked and
+  is current. GuardLMS relies on that distinction so an unchecked plugin is
+  never displayed as up to date.
+- `moodle.coreupdates` carries the same information for Moodle core, which the
+  per-plugin API does not cover.
+
+The refresh only happens on cron paths. The push that runs while an admin is
+connecting the site stays on cached data, so the connect screen never blocks on
+a request to download.moodle.org.
 
 ### Example payload
 
@@ -41,22 +68,40 @@ because GuardLMS matches CVEs on the component name and version.
         "type": "mod",
         "name": "quiz",
         "version": "2024100700",
+        "versiondisk": "2024100700",
         "release": "4.5.3",
         "displayname": "Quiz",
         "isstandard": true,
-        "enabled": 1
+        "enabled": 1,
+        "updates": []
       },
       {
         "component": "local_guardlms",
         "type": "local",
         "name": "guardlms",
         "version": "2026061900",
+        "versiondisk": "2026061900",
         "release": "1.1.0",
         "displayname": "GuardLMS",
         "isstandard": false,
-        "enabled": -1
+        "enabled": -1,
+        "updates": [
+          {
+            "version": "2026073100",
+            "release": "1.5.0",
+            "maturity": 200,
+            "url": "https://moodle.org/plugins/local_guardlms"
+          }
+        ]
       }
-    ]
+    ],
+    "updatecheck": {
+      "enabled": true,
+      "lastfetched": 1781305200,
+      "stale": false,
+      "fetcherror": null
+    },
+    "coreupdates": []
   },
   "server": {
     "os_family": "Linux",

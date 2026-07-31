@@ -36,6 +36,17 @@ use core_plugin_manager;
  */
 class collector {
     /**
+     * How stale Moodle's cached update-check response may be before this plugin
+     * refetches it itself, in seconds.
+     *
+     * Mirrors the freshness window Moodle's own cron uses
+     * (\core\update\checker::cron_has_fresh_fetch()), so a site whose cron is
+     * healthy is never fetched twice, while a site whose cron is broken still
+     * reports current data instead of a months-old snapshot.
+     */
+    protected const UPDATE_MAX_AGE = 24 * 60 * 60;
+
+    /**
      * Moodle config keys reported when the admin opts in to send configuration.
      *
      * Limited to security and session relevant settings so GuardLMS can review
@@ -59,14 +70,25 @@ class collector {
      * Build the full reporting payload.
      *
      * @param bool $includeconfig When true, add the opt-in Moodle config section.
+     * @param bool $refreshupdates When true, allow an outbound refresh of Moodle's
+     *                             update-check data before reporting it. Only cron
+     *                             paths pass true; see update_check_state().
      * @return array Typed envelope ready to be JSON encoded.
      */
-    public static function build_payload(bool $includeconfig = false): array {
+    public static function build_payload(bool $includeconfig = false, bool $refreshupdates = false): array {
+        // Resolved first, and deliberately before moodle_info() asks
+        // core_plugin_manager for the plugin list: a refresh calls
+        // \core\update\checker::fetch(), which resets the plugin manager's
+        // caches. Reading the inventory afterwards means the plugin info
+        // objects carry the update data we just fetched rather than the stale
+        // set the singleton was holding.
+        $updatecheck = self::update_check_state($refreshupdates);
+
         $payload = [
             'platform' => 'moodle',
             'siteurl' => config::siteurl(),
             'generatedtime' => time(),
-            'moodle' => self::moodle_info(),
+            'moodle' => self::moodle_info($updatecheck),
             'server' => self::server_info(),
             'php' => self::php_info(),
             'database' => self::database_info(),
@@ -82,13 +104,18 @@ class collector {
     /**
      * Moodle release and installed plugin inventory.
      *
+     * @param array $updatecheck State returned by update_check_state().
      * @return array
      */
-    protected static function moodle_info(): array {
+    protected static function moodle_info(array $updatecheck): array {
         global $CFG;
 
         $pluginman = core_plugin_manager::instance();
         $plugins = [];
+
+        // Only claim anything about updates when the underlying data is known
+        // to be current. See the 'updates' key comment below.
+        $updatesknown = !$updatecheck['stale'];
 
         foreach ($pluginman->get_plugins() as $type => $pluginsoftype) {
             foreach ($pluginsoftype as $name => $info) {
@@ -98,25 +125,201 @@ class collector {
                     continue;
                 }
 
-                $plugins[] = [
+                $plugin = [
                     'component' => $info->component,
                     'type' => $type,
                     'name' => $name,
                     'version' => (string) $version,
+                    // Moodle compares available updates against the code on disk
+                    // while 'version' above reports the version the database is
+                    // upgraded to. The two differ only while an upgrade is
+                    // pending, and
+                    // reporting both lets GuardLMS tell that case apart from a
+                    // plugin that is genuinely behind.
+                    'versiondisk' => (string) ($info->versiondisk ?? ''),
                     'release' => (string) ($info->release ?? ''),
                     'displayname' => (string) $info->displayname,
                     'isstandard' => (bool) $info->is_standard(),
                     'enabled' => self::enabled_state($info),
                 ];
+
+                // Tri-state, and the distinction is the whole point of this key:
+                // present-but-empty means "checked, nothing available", absent
+                // means "nobody checked". Without it GuardLMS cannot tell an
+                // up-to-date plugin from one whose site never ran an update
+                // check, and would render both as fine.
+                if ($updatesknown) {
+                    $plugin['updates'] = self::plugin_updates($info);
+                }
+
+                $plugins[] = $plugin;
             }
         }
 
-        return [
+        $moodle = [
             'release' => (string) $CFG->release,
             'version' => (string) $CFG->version,
             'branch' => (string) $CFG->branch,
             'plugincount' => count($plugins),
             'plugins' => $plugins,
+            'updatecheck' => $updatecheck,
+        ];
+
+        if ($updatesknown) {
+            $moodle['coreupdates'] = self::core_updates();
+        }
+
+        return $moodle;
+    }
+
+    /**
+     * Resolve the state of Moodle's update checker, refreshing it when allowed.
+     *
+     * \core\update\checker::get_update_info() only ever reads the response
+     * cached by the last fetch; it never contacts download.moodle.org itself.
+     * On a site whose cron is broken, or whose automatic check is switched off,
+     * that cache is stale or empty — and reporting it verbatim would tell
+     * GuardLMS "no updates available" when the truth is "nobody looked". So the
+     * cron paths refetch whenever the cache is older than UPDATE_MAX_AGE, and
+     * anything that cannot be refreshed is reported as stale rather than as
+     * good news.
+     *
+     * @param bool $refresh Allow an outbound fetch. Only cron paths pass true:
+     *                      a web request must not block on download.moodle.org.
+     * @return array{enabled: bool, lastfetched: int|null, stale: bool, fetcherror: string|null}
+     */
+    protected static function update_check_state(bool $refresh): array {
+        // Guarded rather than assumed: if a future Moodle moves or drops the
+        // class, the site keeps pushing its inventory and simply reports that
+        // update information is unavailable.
+        if (!class_exists('\core\update\checker')) {
+            return [
+                'enabled' => false,
+                'lastfetched' => null,
+                'stale' => true,
+                'fetcherror' => null,
+            ];
+        }
+
+        $checker = \core\update\checker::instance();
+
+        // The checker's own enabled flag is $CFG->disableupdatenotifications.
+        // With it off, Moodle returns no update info for any component, so
+        // there is nothing to refresh and nothing to report.
+        $enabled = (bool) $checker->enabled();
+        $lastfetched = $enabled ? $checker->get_last_timefetched() : null;
+        $lastfetched = empty($lastfetched) ? null : (int) $lastfetched;
+        $fetcherror = null;
+
+        // PHPUNIT_TEST guard: fetch() performs a real request to
+        // download.moodle.org, which a test run must never do.
+        $mayfetch = $enabled && $refresh && !(defined('PHPUNIT_TEST') && PHPUNIT_TEST);
+
+        if ($mayfetch && self::update_data_is_stale($lastfetched)) {
+            try {
+                $checker->fetch();
+                $fetched = $checker->get_last_timefetched();
+                $lastfetched = empty($fetched) ? null : (int) $fetched;
+            } catch (\Throwable $e) {
+                // A site behind an egress firewall must still push its
+                // inventory; it just pushes it without update information, and
+                // says why.
+                $fetcherror = \core_text::substr($e->getMessage(), 0, 500);
+            }
+        }
+
+        return [
+            'enabled' => $enabled,
+            'lastfetched' => $lastfetched,
+            'stale' => !$enabled || self::update_data_is_stale($lastfetched),
+            'fetcherror' => $fetcherror,
+        ];
+    }
+
+    /**
+     * Whether a fetch timestamp is missing or older than the freshness window.
+     *
+     * @param int|null $lastfetched Unix timestamp of the last fetch.
+     * @return bool
+     */
+    protected static function update_data_is_stale(?int $lastfetched): bool {
+        if (empty($lastfetched)) {
+            return true;
+        }
+
+        // A timestamp in the future is clock skew we cannot reason about.
+        // Moodle's own cron treats it as fresh rather than refetching every
+        // run, and so do we.
+        if ($lastfetched > time()) {
+            return false;
+        }
+
+        return (time() - $lastfetched) > self::UPDATE_MAX_AGE;
+    }
+
+    /**
+     * Available updates for one plugin, exactly as Moodle itself reports them.
+     *
+     * \core\plugininfo\base::available_updates() already applies the site's
+     * minimum maturity setting and only returns versions newer than the code on
+     * disk, so this is the same list the admin sees on the plugin overview
+     * screen — not a guess made by comparing version strings elsewhere.
+     *
+     * @param mixed $info Plugin info object from core_plugin_manager.
+     * @return array List of update descriptors; empty when the plugin is current.
+     */
+    protected static function plugin_updates($info): array {
+        $updates = [];
+
+        foreach ($info->available_updates() ?: [] as $update) {
+            $updates[] = self::update_descriptor($update);
+        }
+
+        return $updates;
+    }
+
+    /**
+     * Available updates for Moodle core.
+     *
+     * available_updates() covers plugins only, so core goes through the checker
+     * directly, with the site's own maturity and build-notification preferences
+     * applied the same way \core\update\checker::cron_notifications() applies
+     * them.
+     *
+     * @return array List of update descriptors; empty when core is current.
+     */
+    protected static function core_updates(): array {
+        global $CFG;
+
+        $options = [
+            'minmaturity' => $CFG->updateminmaturity ?? MATURITY_STABLE,
+            'notifybuilds' => !empty($CFG->updatenotifybuilds),
+        ];
+
+        $updates = [];
+
+        foreach (\core\update\checker::instance()->get_update_info('core', $options) ?: [] as $update) {
+            $updates[] = self::update_descriptor($update);
+        }
+
+        return $updates;
+    }
+
+    /**
+     * Flatten a \core\update\info object into the reported shape.
+     *
+     * The download URL and its hash are deliberately dropped: GuardLMS reports
+     * that an update exists, it never installs one.
+     *
+     * @param mixed $update A \core\update\info instance.
+     * @return array
+     */
+    protected static function update_descriptor($update): array {
+        return [
+            'version' => (string) $update->version,
+            'release' => (string) ($update->release ?? ''),
+            'maturity' => isset($update->maturity) ? (int) $update->maturity : null,
+            'url' => (string) ($update->url ?? ''),
         ];
     }
 

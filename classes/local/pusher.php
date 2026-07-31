@@ -32,10 +32,15 @@ class pusher {
     /**
      * Push the site inventory to GuardLMS.
      *
+     * @param bool $refreshupdates Allow the collector to refresh Moodle's
+     *                             update-check data before reporting it. Cron
+     *                             paths pass true; the connect callback runs in
+     *                             a web request and must not block on an
+     *                             outbound fetch to download.moodle.org.
      * @return string Human readable success message for mtrace.
      * @throws \moodle_exception When not configured or the push is rejected.
      */
-    public static function push(): string {
+    public static function push(bool $refreshupdates = false): string {
         global $CFG;
 
         $apikey = trim((string) get_config('local_guardlms', 'apikey'));
@@ -48,7 +53,7 @@ class pusher {
         $endpoint = config::pushendpoint();
 
         $includeconfig = (bool) get_config('local_guardlms', 'sendconfig');
-        $payload = collector::build_payload($includeconfig);
+        $payload = collector::build_payload($includeconfig, $refreshupdates);
 
         require_once($CFG->libdir . '/filelib.php');
 
