@@ -41,6 +41,9 @@ class initial_push extends adhoc_task {
             return;
         }
 
-        mtrace(pusher::push());
+        // Runs under cron, so it may refresh the update-check data: this is the
+        // retry path for a connect-time push, and it should not hand GuardLMS a
+        // second inventory that still says "updates unknown".
+        mtrace(pusher::push(true));
     }
 }

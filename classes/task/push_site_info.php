@@ -65,6 +65,10 @@ class push_site_info extends scheduled_task {
                 . '. Reconnect via the GuardLMS connect page to refresh it.');
         }
 
-        mtrace(pusher::push());
+        // Refresh Moodle's update-check data as part of this run. The task is
+        // scheduled daily, matching the cadence Moodle's own update cron uses,
+        // so a site whose core update cron never runs still reports which of
+        // its plugins have updates waiting instead of reporting silence.
+        mtrace(pusher::push(true));
     }
 }
