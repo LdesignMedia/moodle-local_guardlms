@@ -79,12 +79,26 @@ class pusher {
             throw new \moodle_exception('error:pushfailed', 'local_guardlms', '', $curl->error);
         }
 
+        // A refused key is a connection problem, not a push problem. Reporting
+        // it as "GuardLMS rejected the push with HTTP status 401" sends an admin
+        // looking at the push settings, which is the one thing that cannot fix
+        // it, so name the actual cause and the actual remedy.
+        if (connect_manager::is_rejected_status($httpcode)) {
+            connect_manager::note_auth_rejected();
+
+            throw new \moodle_exception('error:pushrejected', 'local_guardlms', '', $httpcode, $response);
+        }
+
         if ($httpcode < 200 || $httpcode >= 300) {
             throw new \moodle_exception('error:pushhttp', 'local_guardlms', '', $httpcode, $response);
         }
 
         set_config('lastpush', time(), 'local_guardlms');
         set_config('lastpushstatus', $httpcode, 'local_guardlms');
+
+        // An accepted push proves the key is live again, whatever an earlier
+        // run concluded.
+        connect_manager::note_auth_accepted();
 
         return 'GuardLMS push succeeded (HTTP ' . $httpcode . ').';
     }

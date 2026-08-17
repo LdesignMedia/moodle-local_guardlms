@@ -48,6 +48,10 @@ if ($hassiteconfig) {
             || optional_param('guardlmsadv', 0, PARAM_BOOL);
 
         $connected = \local_guardlms\local\connect_manager::is_connected();
+        // Holding a key is not the same as having a working connection. Once
+        // GuardLMS has refused that key, "Connected" is the single most
+        // misleading thing this page can say, so the refused state wins.
+        $rejected = $connected && \local_guardlms\local\connect_manager::is_auth_rejected();
 
         // The buttons trigger the endpoints directly; connect.php is a bare
         // redirect and disconnect.php a bare action. The status and both buttons
@@ -64,19 +68,39 @@ if ($hassiteconfig) {
             ['class' => 'local-guardlms-logo']
         );
 
-        // One status line, green when connected and red when not. The WordPress
-        // plugin renders the same block, so both plugins look the same.
+        // One status line: green when connected, amber when GuardLMS refuses
+        // the key, red when there is no connection. The WordPress plugin
+        // renders the same block, so both plugins look the same.
+        if ($rejected) {
+            $statustext = get_string('connect:statusrejected', 'local_guardlms');
+            $statusclass = 'local-guardlms-badge-rejected';
+        } else if ($connected) {
+            $statustext = get_string('connect:statusconnected', 'local_guardlms');
+            $statusclass = 'local-guardlms-badge-connected';
+        } else {
+            $statustext = get_string('connect:statusdisconnected', 'local_guardlms');
+            $statusclass = 'local-guardlms-badge-disconnected';
+        }
+
         $status = html_writer::div(
             html_writer::span(get_string('connect:statuslabel', 'local_guardlms')) . ' ' .
-            html_writer::span(
-                $connected
-                    ? get_string('connect:statusconnected', 'local_guardlms')
-                    : get_string('connect:statusdisconnected', 'local_guardlms'),
-                'local-guardlms-badge ' .
-                    ($connected ? 'local-guardlms-badge-connected' : 'local-guardlms-badge-disconnected')
-            ),
+            html_writer::span($statustext, 'local-guardlms-badge ' . $statusclass),
             'local-guardlms-status'
         );
+
+        if ($rejected) {
+            $explain = html_writer::tag('p', get_string('connect:rejectedexplain', 'local_guardlms'));
+
+            $rejectedat = \local_guardlms\local\connect_manager::auth_rejected_at();
+            if ($rejectedat) {
+                $explain .= html_writer::tag(
+                    'p',
+                    get_string('connect:rejectedsince', 'local_guardlms', userdate($rejectedat))
+                );
+            }
+
+            $status .= html_writer::div($explain, 'alert alert-danger');
+        }
 
         $details = [];
         if ($connected) {

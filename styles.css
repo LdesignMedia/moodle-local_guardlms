@@ -64,3 +64,8 @@
     background-color: #fcdada;
     color: #a02020;
 }
+
+.local-guardlms-badge-rejected {
+    background-color: #fcf0d3;
+    color: #8a5300;
+}

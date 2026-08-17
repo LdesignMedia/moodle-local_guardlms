@@ -36,6 +36,25 @@ class connect_manager {
     /** @var int Seconds a pending connect state stays valid. */
     public const STATE_TTL = 900;
 
+    /**
+     * HTTP statuses on an authenticated call that mean GuardLMS refused this
+     * site's push key.
+     *
+     * 401 is the key being gone or expired server-side; 403 is a key that still
+     * authenticates but is no longer bound to a website, which is what happens
+     * when the website is deleted in the GuardLMS dashboard. Neither recovers
+     * without a reconnect, and both otherwise leave the settings page reporting
+     * a live connection while every push is refused.
+     *
+     * A reverse proxy answering 403 on its own would raise this state falsely.
+     * That is deliberate and cheap: the state only adds a warning and a
+     * Reconnect prompt, changes nothing about the stored key, and clears itself
+     * on the next accepted push.
+     *
+     * @var int[]
+     */
+    public const REJECTED_STATUSES = [401, 403];
+
     /** @var api_client|null Client override for unit tests. */
     protected ?api_client $client;
 
@@ -106,6 +125,9 @@ class connect_manager {
             set_config('keyexpiresat', strtotime((string) $data['expires_at']) ?: '', 'local_guardlms');
         }
         set_config('connectedat', time(), 'local_guardlms');
+        // The fresh key clears whatever refusal the previous one collected;
+        // reconnecting IS the recovery path that state points the admin at.
+        unset_config('authrejectedat', 'local_guardlms');
 
         // The exchange already carried the SDK key, so a site that connects
         // today never needs a second round trip to switch real-time monitoring
@@ -161,6 +183,9 @@ class connect_manager {
         unset_config('keyexpiresat', 'local_guardlms');
         unset_config('connectstate', 'local_guardlms');
         unset_config('connectstateexpires', 'local_guardlms');
+        // A site with no key has nothing to warn about, so the refused state
+        // goes with it.
+        unset_config('authrejectedat', 'local_guardlms');
     }
 
     /**
@@ -171,5 +196,67 @@ class connect_manager {
     public static function is_connected(): bool {
         return trim((string) get_config('local_guardlms', 'apikey')) !== ''
             && (int) get_config('local_guardlms', 'connectedat') > 0;
+    }
+
+    /**
+     * Whether an HTTP status from an authenticated call means the key was refused.
+     *
+     * @param int $status HTTP status code.
+     * @return bool
+     */
+    public static function is_rejected_status(int $status): bool {
+        return in_array($status, self::REJECTED_STATUSES, true);
+    }
+
+    /**
+     * Whether GuardLMS refused this site's push key on its last push.
+     *
+     * A site in this state still holds a key and still reads as connected
+     * everywhere the key is used, which is exactly why the state is tracked:
+     * without it the settings page keeps promising a live connection, with a
+     * key expiry a year out, while every push is refused.
+     *
+     * @return bool
+     */
+    public static function is_auth_rejected(): bool {
+        return self::auth_rejected_at() > 0;
+    }
+
+    /**
+     * When the first refused push since the last accepted one happened.
+     *
+     * @return int Unix timestamp, or 0 when the key is not in the refused state.
+     */
+    public static function auth_rejected_at(): int {
+        return max(0, (int) get_config('local_guardlms', 'authrejectedat'));
+    }
+
+    /**
+     * Record that GuardLMS refused this site's push key.
+     *
+     * Keeps the FIRST refusal's timestamp: an admin needs to know since when the
+     * site stopped reporting, not when the most recent cron retry ran.
+     *
+     * The key is deliberately NOT removed. A backend answering 401 for an hour
+     * must not cost the site its credential, and reconnecting stays the admin's
+     * call rather than the plugin's.
+     */
+    public static function note_auth_rejected(): void {
+        if (self::is_auth_rejected()) {
+            return;
+        }
+
+        set_config('authrejectedat', time(), 'local_guardlms');
+    }
+
+    /**
+     * Record that GuardLMS accepted this site's push key, clearing the refused state.
+     */
+    public static function note_auth_accepted(): void {
+        if (!self::is_auth_rejected()) {
+            return;
+        }
+
+        unset_config('authrejectedat', 'local_guardlms');
     }
 }

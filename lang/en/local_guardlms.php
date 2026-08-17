@@ -41,6 +41,9 @@ $string['connect:reconnectinfo'] = 'Reconnecting issues a fresh push key for thi
 $string['connect:statuslabel'] = 'Status:';
 $string['connect:statusconnected'] = 'Connected';
 $string['connect:statusdisconnected'] = 'Not connected';
+$string['connect:statusrejected'] = 'Reconnect required';
+$string['connect:rejectedexplain'] = 'GuardLMS no longer accepts this site\'s connection key. The key was revoked, or the website it belonged to was removed from the GuardLMS dashboard. This site has stopped reporting: use Reconnect below to issue a new key.';
+$string['connect:rejectedsince'] = 'First refused: {$a}';
 $string['connect:connectedat'] = 'Connected at: {$a}';
 $string['connect:keyexpires'] = 'Expires at: {$a}';
 $string['connect:lastpush'] = 'Last push: {$a}';
@@ -92,6 +95,7 @@ $string['task:pushsiteinfo'] = 'Push site information to GuardLMS';
 // Errors.
 $string['error:pushfailed'] = 'The push to GuardLMS failed: {$a}';
 $string['error:pushhttp'] = 'GuardLMS rejected the push with HTTP status {$a}.';
+$string['error:pushrejected'] = 'GuardLMS no longer accepts this site\'s connection key (HTTP {$a}). The key was revoked, or the website it belonged to was removed from the GuardLMS dashboard. Reconnect this site from the GuardLMS settings page to issue a new key.';
 $string['error:notconfigured'] = 'GuardLMS is not connected yet. Use the Connect to GuardLMS button on the plugin settings page to set it up.';
 $string['error:connectstate'] = 'The connection attempt is invalid or has expired. Please start the connection again from the Connect to GuardLMS page.';
 $string['error:connectfailed'] = 'Could not reach GuardLMS to complete the connection: {$a}';

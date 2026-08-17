@@ -153,6 +153,79 @@ final class sdk_client_test extends \advanced_testcase {
     }
 
     /**
+     * A refused push key is a connection problem, not a real-time problem.
+     * Reporting it as "HTTP 401" here sends the admin to the real-time
+     * settings, which cannot fix it.
+     *
+     * @dataProvider refused_status_provider
+     * @param int $status The HTTP status GuardLMS answered with.
+     */
+    public function test_a_refused_key_is_reported_as_a_connection_problem(int $status): void {
+        $this->resetAfterTest();
+        $this->set_up_connected();
+
+        $client = new testable_sdk_client($status, json_encode(['message' => 'Unauthenticated.']));
+
+        $this->assertFalse(sdk_client::resolve('fetch', 5, $client));
+        $this->assertTrue(connect_manager::is_auth_rejected());
+        $this->assertStringContainsString('Reconnect', sdk_config::refresh_error());
+        $this->assertFalse(sdk_config::backend_unsupported());
+    }
+
+    /**
+     * Statuses that mean GuardLMS refused this site's key.
+     *
+     * @return array<string, int[]>
+     */
+    public static function refused_status_provider(): array {
+        return [
+            'key deleted server-side' => [401],
+            'key no longer bound' => [403],
+        ];
+    }
+
+    /**
+     * A backend answering 401 for a while must not cost the site its key.
+     */
+    public function test_a_refused_key_is_never_removed_by_the_plugin(): void {
+        $this->resetAfterTest();
+        $this->set_up_connected();
+
+        $client = new testable_sdk_client(401, json_encode(['message' => 'Unauthenticated.']));
+        sdk_client::resolve('fetch', 5, $client);
+
+        $this->assertSame(self::PUSH_KEY, get_config('local_guardlms', 'apikey'));
+        $this->assertTrue(connect_manager::is_connected());
+    }
+
+    /**
+     * A successful refresh proves the key is live again.
+     */
+    public function test_a_successful_refresh_clears_a_recorded_refusal(): void {
+        $this->resetAfterTest();
+        $this->set_up_connected();
+        set_config('authrejectedat', 1754000000, 'local_guardlms');
+
+        $client = new testable_sdk_client(200, $this->success_body());
+
+        $this->assertTrue(sdk_client::resolve('fetch', 5, $client));
+        $this->assertFalse(connect_manager::is_auth_rejected());
+    }
+
+    /**
+     * A backend outage is not a credential problem.
+     */
+    public function test_a_server_error_leaves_the_connection_state_alone(): void {
+        $this->resetAfterTest();
+        $this->set_up_connected();
+
+        $client = new testable_sdk_client(500, '<html>Gateway exploded</html>');
+        sdk_client::resolve('fetch', 5, $client);
+
+        $this->assertFalse(connect_manager::is_auth_rejected());
+    }
+
+    /**
      * A response with no message still yields a usable sentence.
      */
     public function test_a_rejected_request_without_a_message_still_reports_something(): void {

@@ -99,6 +99,19 @@ class sdk_client {
             return false;
         }
 
+        // A refused key is a connection problem, not a real-time problem.
+        // Reporting it as "HTTP 401" here sends the admin looking at the
+        // real-time settings, which is the one thing that cannot fix it, so
+        // record it as the connection state it actually is.
+        if (connect_manager::is_rejected_status($result['status'])) {
+            connect_manager::note_auth_rejected();
+            sdk_config::record_refresh_error(
+                get_string('error:pushrejected', sdk_config::COMPONENT, $result['status'])
+            );
+
+            return false;
+        }
+
         if ($result['status'] < 200 || $result['status'] >= 300) {
             sdk_config::record_refresh_error(self::failure_message($result));
 
@@ -114,6 +127,11 @@ class sdk_client {
 
             return false;
         }
+
+        // The key just authenticated, so clear any refusal an earlier call
+        // recorded - a reconnect elsewhere, or a backend that has come back,
+        // must not leave the settings page stuck on "Reconnect required".
+        connect_manager::note_auth_accepted();
 
         if ($action === 'revoke') {
             // Nothing to store: the caller is tearing the connection down.
