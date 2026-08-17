@@ -142,6 +142,21 @@ daily push runs from Moodle cron; you can also run it on demand from Site
 administration > Server > Scheduled tasks. If pushes ever fail or the push key
 is about to expire, open the connect page and click **Reconnect to GuardLMS**.
 
+### Connection status
+
+The settings page shows one of three states:
+
+| Status | Meaning |
+| --- | --- |
+| **Connected** | The push key works. Pushes are being accepted. |
+| **Reconnect required** | GuardLMS refused this site's key (HTTP 401 or 403). The key was revoked, or the website it belonged to was removed from the GuardLMS dashboard. The site has stopped reporting; click **Reconnect** to issue a new key. |
+| **Not connected** | No key is installed. |
+
+"Reconnect required" also names the date of the first refused push, so it is
+clear since when the site stopped reporting. The plugin never deletes the key on
+its own: a GuardLMS outage that answers 401 for a while resolves itself, and the
+state clears as soon as a push is accepted again.
+
 ## Advanced settings (support and self-hosted only)
 
 The settings page shows the Connect button and the connection status, nothing
