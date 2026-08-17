@@ -123,6 +123,84 @@ final class connect_manager_test extends \advanced_testcase {
     }
 
     /**
+     * Reconnecting is the recovery path the refused state points at, so a
+     * successful exchange has to clear it.
+     */
+    public function test_complete_connect_clears_a_refused_key_state(): void {
+        $this->resetAfterTest();
+
+        set_config('baseurl', 'https://app.guardlms.example', 'local_guardlms');
+        set_config('connectstate', 'thestate', 'local_guardlms');
+        set_config('connectstateexpires', time() + 600, 'local_guardlms');
+        set_config('authrejectedat', 1754000000, 'local_guardlms');
+
+        $manager = new connect_manager($this->stub_client(['token' => '99|fresh-key']));
+        $manager->complete_connect(str_repeat('c', 64), 'thestate');
+        $this->assertDebuggingCalled();
+
+        $this->assertFalse(connect_manager::is_auth_rejected());
+    }
+
+    /**
+     * Only the statuses that actually mean "this key is dead" count. A backend
+     * outage, a rate limit and a URL mismatch are all recoverable without a new
+     * key, so none of them may prompt a reconnect.
+     */
+    public function test_only_refused_key_statuses_count(): void {
+        $this->assertTrue(connect_manager::is_rejected_status(401));
+        $this->assertTrue(connect_manager::is_rejected_status(403));
+        $this->assertFalse(connect_manager::is_rejected_status(500));
+        $this->assertFalse(connect_manager::is_rejected_status(429));
+        $this->assertFalse(connect_manager::is_rejected_status(422));
+    }
+
+    /**
+     * "Since when did this site stop reporting" is the question the settings
+     * page answers, so a cron retry must not reset the clock.
+     */
+    public function test_the_first_refusal_timestamp_survives_later_refusals(): void {
+        $this->resetAfterTest();
+
+        connect_manager::note_auth_rejected();
+        $first = connect_manager::auth_rejected_at();
+        $this->assertGreaterThan(0, $first);
+
+        connect_manager::note_auth_rejected();
+
+        $this->assertSame($first, connect_manager::auth_rejected_at());
+    }
+
+    /**
+     * An accepted push clears the refused state.
+     */
+    public function test_an_accepted_push_clears_the_refused_state(): void {
+        $this->resetAfterTest();
+
+        set_config('authrejectedat', 1754000000, 'local_guardlms');
+        $this->assertTrue(connect_manager::is_auth_rejected());
+
+        connect_manager::note_auth_accepted();
+
+        $this->assertFalse(connect_manager::is_auth_rejected());
+    }
+
+    /**
+     * A site with no key has nothing to reconnect a refused key for.
+     */
+    public function test_disconnect_clears_the_refused_state(): void {
+        $this->resetAfterTest();
+
+        set_config('apikey', '99|dead-key', 'local_guardlms');
+        set_config('connectedat', 1750000000, 'local_guardlms');
+        set_config('authrejectedat', 1754000000, 'local_guardlms');
+
+        connect_manager::disconnect();
+
+        $this->assertFalse(connect_manager::is_connected());
+        $this->assertFalse(connect_manager::is_auth_rejected());
+    }
+
+    /**
      * A state mismatch aborts the exchange and consumes the pending state.
      */
     public function test_complete_connect_rejects_state_mismatch(): void {
