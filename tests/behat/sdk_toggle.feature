@@ -40,8 +40,8 @@ Feature: Real-time monitoring settings tell an admin what is going on
   Scenario: UX0 Enabling real-time monitoring takes one tick and one save
     Given the following config values are set as admin:
       | sdkkey                | glms_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | local_guardlms |
-      | sdkurl                | https://app.guardlms.com/sdk/guardlms.min.js?v=abc123def456   | local_guardlms |
-      | sdkerrorsendpoint     | https://app.guardlms.com/api/sdk/errors/collect               | local_guardlms |
+      | sdkurl                | https://dashboard.guardlms.com/sdk/guardlms.min.js?v=abc123def456   | local_guardlms |
+      | sdkerrorsendpoint     | https://dashboard.guardlms.com/api/sdk/errors/collect               | local_guardlms |
       | sdkbackendenabled     | 1                                                            | local_guardlms |
       | sdksubscriptionactive | 1                                                            | local_guardlms |
       | sdkanalyticsallowed   | 1                                                            | local_guardlms |
@@ -78,7 +78,7 @@ Feature: Real-time monitoring settings tell an admin what is going on
   Scenario: UX3 A plan without analytics disables the analytics box and says why
     Given the following config values are set as admin:
       | sdkkey                | glms_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | local_guardlms |
-      | sdkurl                | https://app.guardlms.com/sdk/guardlms.min.js?v=abc123def456   | local_guardlms |
+      | sdkurl                | https://dashboard.guardlms.com/sdk/guardlms.min.js?v=abc123def456   | local_guardlms |
       | sdkbackendenabled     | 1                                                            | local_guardlms |
       | sdksubscriptionactive | 1                                                            | local_guardlms |
       | sdkanalyticsallowed   | 0                                                            | local_guardlms |
@@ -112,7 +112,7 @@ Feature: Real-time monitoring settings tell an admin what is going on
   Scenario: UX6 A domain mismatch names both hosts as an advisory
     Given the following config values are set as admin:
       | sdkkey                 | glms_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | local_guardlms |
-      | sdkurl                 | https://app.guardlms.com/sdk/guardlms.min.js?v=abc123def456   | local_guardlms |
+      | sdkurl                 | https://dashboard.guardlms.com/sdk/guardlms.min.js?v=abc123def456   | local_guardlms |
       | sdkbackendenabled      | 1                                                            | local_guardlms |
       | sdksubscriptionactive  | 1                                                            | local_guardlms |
       | sdkanalyticsallowed    | 1                                                            | local_guardlms |
@@ -127,9 +127,9 @@ Feature: Real-time monitoring settings tell an admin what is going on
     # Rows 7 and 1 are both true; row 7 wins, and the date must never be an epoch.
     Given the following config values are set as admin:
       | sdkrefreshedat  | 0                                       | local_guardlms |
-      | sdkrefresherror | Could not resolve host app.guardlms.com | local_guardlms |
+      | sdkrefresherror | Could not resolve host dashboard.guardlms.com | local_guardlms |
     When I navigate to "Plugins > Local plugins > GuardLMS" in site administration
-    Then I should see "Could not resolve host app.guardlms.com"
+    Then I should see "Could not resolve host dashboard.guardlms.com"
     And I should see "Refresh now"
     And I should see "No successful refresh yet."
     And I should not see "1970"
@@ -141,8 +141,8 @@ Feature: Real-time monitoring settings tell an admin what is going on
     Given the following config values are set as admin:
       | sdkbackendenabled     | 1                                       | local_guardlms |
       | sdksubscriptionactive | 1                                       | local_guardlms |
-      | sdkrefresherror       | Could not resolve host app.guardlms.com | local_guardlms |
+      | sdkrefresherror       | Could not resolve host dashboard.guardlms.com | local_guardlms |
     When I navigate to "Plugins > Local plugins > GuardLMS" in site administration
-    Then I should see "Could not resolve host app.guardlms.com"
+    Then I should see "Could not resolve host dashboard.guardlms.com"
     And I should see "Last successful refresh:"
     And I should not see "No successful refresh yet."

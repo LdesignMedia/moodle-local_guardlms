@@ -16,6 +16,7 @@
 
 namespace local_guardlms;
 
+use local_guardlms\local\config;
 use local_guardlms\task\refresh_sdk_config;
 
 defined('MOODLE_INTERNAL') || die();
@@ -39,6 +40,9 @@ final class upgrade_test extends \advanced_testcase {
 
     /** @var int The savepoint this release writes. */
     private const NEW_VERSION = 2026072800;
+
+    /** @var int The last savepoint in db/upgrade.php — where a full run from OLD_VERSION lands. */
+    private const LATEST_VERSION = 2026082100;
 
     /**
      * Pretend the site is still on the previous release.
@@ -75,7 +79,7 @@ final class upgrade_test extends \advanced_testcase {
 
         $this->assertSame('0', get_config('local_guardlms', 'sdkenabled'));
         $this->assertSame('0', get_config('local_guardlms', 'sdkanalytics'));
-        $this->assertSame((string) self::NEW_VERSION, get_config('local_guardlms', 'version'));
+        $this->assertSame((string) self::LATEST_VERSION, get_config('local_guardlms', 'version'));
     }
 
     /**
@@ -128,6 +132,11 @@ final class upgrade_test extends \advanced_testcase {
 
         // The admin has since opted in. A re-run must not undo that.
         set_config('sdkenabled', 1, 'local_guardlms');
+
+        // Replaying from NEW_VERSION also replays the later 2026082100 step, and
+        // upgrade_plugin_savepoint() refuses to write a savepoint the site is
+        // already at — so the replay starts from the stored version it claims.
+        set_config('version', self::NEW_VERSION, 'local_guardlms');
 
         $this->assertTrue(xmldb_local_guardlms_upgrade(self::NEW_VERSION));
 
@@ -255,5 +264,63 @@ final class upgrade_test extends \advanced_testcase {
             $source,
             'That comment asserted fulltree rules out admin search, which is false.'
         );
+    }
+
+    /**
+     * 1.5.2: the never-provisioned pre-1.5.2 default host is rewritten to the live one.
+     */
+    public function test_upgrade_rewrites_the_legacy_default_baseurl(): void {
+        $this->resetAfterTest();
+
+        set_config('version', 2026081700, 'local_guardlms');
+        set_config('baseurl', config::LEGACY_BASEURL, 'local_guardlms');
+
+        $this->assertTrue(xmldb_local_guardlms_upgrade(2026081700));
+
+        $this->assertSame(config::DEFAULT_BASEURL, get_config('local_guardlms', 'baseurl'));
+        $this->assertSame(config::DEFAULT_BASEURL, config::baseurl());
+    }
+
+    /**
+     * 1.5.2: a trailing slash on the stored legacy default does not dodge the rewrite.
+     */
+    public function test_upgrade_rewrites_the_legacy_default_with_trailing_slash(): void {
+        $this->resetAfterTest();
+
+        set_config('version', 2026081700, 'local_guardlms');
+        set_config('baseurl', config::LEGACY_BASEURL . '/', 'local_guardlms');
+
+        $this->assertTrue(xmldb_local_guardlms_upgrade(2026081700));
+
+        $this->assertSame(config::DEFAULT_BASEURL, get_config('local_guardlms', 'baseurl'));
+    }
+
+    /**
+     * 1.5.2: a deliberately overridden base URL (self-hosted GuardLMS) is left alone.
+     */
+    public function test_upgrade_leaves_a_custom_baseurl_alone(): void {
+        $this->resetAfterTest();
+
+        set_config('version', 2026081700, 'local_guardlms');
+        set_config('baseurl', 'https://guardlms.example.com', 'local_guardlms');
+
+        $this->assertTrue(xmldb_local_guardlms_upgrade(2026081700));
+
+        $this->assertSame('https://guardlms.example.com', get_config('local_guardlms', 'baseurl'));
+    }
+
+    /**
+     * 1.5.2: an unset base URL stays unset — the constant fallback already covers it.
+     */
+    public function test_upgrade_leaves_an_unset_baseurl_alone(): void {
+        $this->resetAfterTest();
+
+        set_config('version', 2026081700, 'local_guardlms');
+        unset_config('baseurl', 'local_guardlms');
+
+        $this->assertTrue(xmldb_local_guardlms_upgrade(2026081700));
+
+        $this->assertFalse(get_config('local_guardlms', 'baseurl'));
+        $this->assertSame(config::DEFAULT_BASEURL, config::baseurl());
     }
 }

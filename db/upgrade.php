@@ -48,5 +48,20 @@ function xmldb_local_guardlms_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2026072800, 'local', 'guardlms');
     }
 
+    if ($oldversion < 2026082100) {
+        // Earlier releases shipped https://app.guardlms.com as the default base
+        // URL, a host that was never provisioned in production (every request
+        // returns 404). admin_apply_default_settings() persisted that default,
+        // so an explicit rewrite is needed; changing the constant alone would
+        // only fix fresh installs. Only the untouched default is rewritten —
+        // a deliberately overridden base URL (self-hosted) is left alone.
+        $stored = rtrim(trim((string) get_config('local_guardlms', 'baseurl')), '/');
+        if ($stored === \local_guardlms\local\config::LEGACY_BASEURL) {
+            set_config('baseurl', \local_guardlms\local\config::DEFAULT_BASEURL, 'local_guardlms');
+        }
+
+        upgrade_plugin_savepoint(true, 2026082100, 'local', 'guardlms');
+    }
+
     return true;
 }
