@@ -41,6 +41,9 @@ final class upgrade_test extends \advanced_testcase {
     /** @var int The savepoint this release writes. */
     private const NEW_VERSION = 2026072800;
 
+    /** @var int The last savepoint in db/upgrade.php — where a full run from OLD_VERSION lands. */
+    private const LATEST_VERSION = 2026082100;
+
     /**
      * Pretend the site is still on the previous release.
      *
@@ -76,7 +79,7 @@ final class upgrade_test extends \advanced_testcase {
 
         $this->assertSame('0', get_config('local_guardlms', 'sdkenabled'));
         $this->assertSame('0', get_config('local_guardlms', 'sdkanalytics'));
-        $this->assertSame((string) self::NEW_VERSION, get_config('local_guardlms', 'version'));
+        $this->assertSame((string) self::LATEST_VERSION, get_config('local_guardlms', 'version'));
     }
 
     /**
@@ -129,6 +132,11 @@ final class upgrade_test extends \advanced_testcase {
 
         // The admin has since opted in. A re-run must not undo that.
         set_config('sdkenabled', 1, 'local_guardlms');
+
+        // Replaying from NEW_VERSION also replays the later 2026082100 step, and
+        // upgrade_plugin_savepoint() refuses to write a savepoint the site is
+        // already at — so the replay starts from the stored version it claims.
+        set_config('version', self::NEW_VERSION, 'local_guardlms');
 
         $this->assertTrue(xmldb_local_guardlms_upgrade(self::NEW_VERSION));
 
