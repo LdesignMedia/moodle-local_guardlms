@@ -30,7 +30,7 @@ use local_guardlms\local\sdk_config;
  */
 final class sdk_tags_test extends \advanced_testcase {
     /** @var string A plausible SDK bundle URL with the content-hash cache buster. */
-    private const SDK_URL = 'https://app.guardlms.com/sdk/guardlms.min.js?v=abc123def456';
+    private const SDK_URL = 'https://dashboard.guardlms.com/sdk/guardlms.min.js?v=abc123def456';
 
     /**
      * A request environment for an ordinary logged-in page view.
@@ -58,8 +58,8 @@ final class sdk_tags_test extends \advanced_testcase {
             'key' => 'glms_' . str_repeat('a', 56),
             'key_prefix' => 'glms_aaa',
             'sdk_url' => self::SDK_URL,
-            'errors_endpoint' => 'https://app.guardlms.com/api/sdk/errors/collect',
-            'analytics_endpoint' => 'https://app.guardlms.com/api/sdk/analytics/collect',
+            'errors_endpoint' => 'https://dashboard.guardlms.com/api/sdk/errors/collect',
+            'analytics_endpoint' => 'https://dashboard.guardlms.com/api/sdk/analytics/collect',
             'enabled' => true,
             'subscription_active' => true,
             'analytics_allowed' => true,
@@ -208,11 +208,11 @@ final class sdk_tags_test extends \advanced_testcase {
 
         foreach (
             [
-            'http://app.guardlms.com/sdk/guardlms.min.js',
+            'http://dashboard.guardlms.com/sdk/guardlms.min.js',
             'javascript:alert(1)',
-            '//app.guardlms.com/sdk/guardlms.min.js',
+            '//dashboard.guardlms.com/sdk/guardlms.min.js',
             '/sdk/guardlms.min.js',
-            'ftp://app.guardlms.com/sdk/guardlms.min.js',
+            'ftp://dashboard.guardlms.com/sdk/guardlms.min.js',
             'not a url at all',
             ] as $url
         ) {
@@ -419,7 +419,7 @@ final class sdk_tags_test extends \advanced_testcase {
         $this->set_up_injectable();
 
         $hostile = '</script><script>window.pwned=1;//';
-        set_config('sdkerrorsendpoint', 'https://app.guardlms.com/collect?x=' . $hostile, 'local_guardlms');
+        set_config('sdkerrorsendpoint', 'https://dashboard.guardlms.com/collect?x=' . $hostile, 'local_guardlms');
 
         $tags = head_injector::sdk_tags_for($this->env());
 
@@ -461,7 +461,7 @@ final class sdk_tags_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->set_up_injectable();
 
-        $hostile = 'https://app.guardlms.com/a.js?x="><script>window.pwned=1;</script>';
+        $hostile = 'https://dashboard.guardlms.com/a.js?x="><script>window.pwned=1;</script>';
         set_config('sdkurl', $hostile, 'local_guardlms');
 
         $this->assertSame('', head_injector::script_src(), 'clean_param must refuse this URL.');
@@ -478,12 +478,12 @@ final class sdk_tags_test extends \advanced_testcase {
         $this->set_up_injectable();
 
         // Ampersands survive clean_param, and an unescaped one is malformed HTML.
-        set_config('sdkurl', 'https://app.guardlms.com/a.js?v=1&x=2', 'local_guardlms');
+        set_config('sdkurl', 'https://dashboard.guardlms.com/a.js?v=1&x=2', 'local_guardlms');
 
         $tags = head_injector::sdk_tags_for($this->env());
 
         $this->assertNotSame('', $tags);
-        $this->assertStringContainsString('src="' . s('https://app.guardlms.com/a.js?v=1&x=2') . '"', $tags);
+        $this->assertStringContainsString('src="' . s('https://dashboard.guardlms.com/a.js?v=1&x=2') . '"', $tags);
         $this->assertStringContainsString('&amp;', $tags);
     }
 

@@ -36,7 +36,14 @@ namespace local_guardlms\local;
  */
 class config {
     /** @var string GuardLMS service the plugin talks to unless an admin overrides it. */
-    public const DEFAULT_BASEURL = 'https://app.guardlms.com';
+    public const DEFAULT_BASEURL = 'https://dashboard.guardlms.com';
+
+    /**
+     * @var string Base URL shipped as the default before 1.5.2. The host was never
+     * provisioned in production; stored configs pointing at it are rewritten to
+     * DEFAULT_BASEURL by the 2026082100 upgrade step.
+     */
+    public const LEGACY_BASEURL = 'https://app.guardlms.com';
 
     /** @var string Inventory push endpoint on the GuardLMS host. */
     public const DEFAULT_PUSHPATH = '/api/externalpush/moodle';

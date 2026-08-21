@@ -16,6 +16,7 @@
 
 namespace local_guardlms;
 
+use local_guardlms\local\config;
 use local_guardlms\task\refresh_sdk_config;
 
 defined('MOODLE_INTERNAL') || die();
@@ -255,5 +256,63 @@ final class upgrade_test extends \advanced_testcase {
             $source,
             'That comment asserted fulltree rules out admin search, which is false.'
         );
+    }
+
+    /**
+     * 1.5.2: the never-provisioned pre-1.5.2 default host is rewritten to the live one.
+     */
+    public function test_upgrade_rewrites_the_legacy_default_baseurl(): void {
+        $this->resetAfterTest();
+
+        set_config('version', 2026081700, 'local_guardlms');
+        set_config('baseurl', config::LEGACY_BASEURL, 'local_guardlms');
+
+        $this->assertTrue(xmldb_local_guardlms_upgrade(2026081700));
+
+        $this->assertSame(config::DEFAULT_BASEURL, get_config('local_guardlms', 'baseurl'));
+        $this->assertSame(config::DEFAULT_BASEURL, config::baseurl());
+    }
+
+    /**
+     * 1.5.2: a trailing slash on the stored legacy default does not dodge the rewrite.
+     */
+    public function test_upgrade_rewrites_the_legacy_default_with_trailing_slash(): void {
+        $this->resetAfterTest();
+
+        set_config('version', 2026081700, 'local_guardlms');
+        set_config('baseurl', config::LEGACY_BASEURL . '/', 'local_guardlms');
+
+        $this->assertTrue(xmldb_local_guardlms_upgrade(2026081700));
+
+        $this->assertSame(config::DEFAULT_BASEURL, get_config('local_guardlms', 'baseurl'));
+    }
+
+    /**
+     * 1.5.2: a deliberately overridden base URL (self-hosted GuardLMS) is left alone.
+     */
+    public function test_upgrade_leaves_a_custom_baseurl_alone(): void {
+        $this->resetAfterTest();
+
+        set_config('version', 2026081700, 'local_guardlms');
+        set_config('baseurl', 'https://guardlms.example.com', 'local_guardlms');
+
+        $this->assertTrue(xmldb_local_guardlms_upgrade(2026081700));
+
+        $this->assertSame('https://guardlms.example.com', get_config('local_guardlms', 'baseurl'));
+    }
+
+    /**
+     * 1.5.2: an unset base URL stays unset — the constant fallback already covers it.
+     */
+    public function test_upgrade_leaves_an_unset_baseurl_alone(): void {
+        $this->resetAfterTest();
+
+        set_config('version', 2026081700, 'local_guardlms');
+        unset_config('baseurl', 'local_guardlms');
+
+        $this->assertTrue(xmldb_local_guardlms_upgrade(2026081700));
+
+        $this->assertFalse(get_config('local_guardlms', 'baseurl'));
+        $this->assertSame(config::DEFAULT_BASEURL, config::baseurl());
     }
 }

@@ -49,7 +49,7 @@ class sdk_config {
      * emitted appVersion is load-bearing for the backend's platform alert
      * (it matches ^(wordpress|moodle)-) and must not drift silently.
      */
-    public const PLUGIN_RELEASE = '1.5.1';
+    public const PLUGIN_RELEASE = '1.5.2';
 
     /** @var int Moodle version that introduced the Hooks API (4.4). Below this nothing is injected. */
     public const HOOKS_API_VERSION = 2024042200;

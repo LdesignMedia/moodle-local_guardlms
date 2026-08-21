@@ -39,9 +39,9 @@ final class sdk_config_test extends \advanced_testcase {
             'key' => 'glms_' . str_repeat('a', 56),
             'key_status' => 'issued',
             'key_prefix' => 'glms_aaa',
-            'sdk_url' => 'https://app.guardlms.com/sdk/guardlms.min.js?v=abc123def456',
-            'errors_endpoint' => 'https://app.guardlms.com/api/sdk/errors/collect',
-            'analytics_endpoint' => 'https://app.guardlms.com/api/sdk/analytics/collect',
+            'sdk_url' => 'https://dashboard.guardlms.com/sdk/guardlms.min.js?v=abc123def456',
+            'errors_endpoint' => 'https://dashboard.guardlms.com/api/sdk/errors/collect',
+            'analytics_endpoint' => 'https://dashboard.guardlms.com/api/sdk/analytics/collect',
             'enabled' => true,
             'subscription_active' => true,
             'analytics_allowed' => true,
@@ -446,7 +446,7 @@ final class sdk_config_test extends \advanced_testcase {
         require($CFG->dirroot . '/local/guardlms/version.php');
 
         $this->assertSame($plugin->release, sdk_config::PLUGIN_RELEASE);
-        $this->assertSame(2026081700, $plugin->version);
+        $this->assertSame(2026082100, $plugin->version);
         $this->assertSame(2020061500, $plugin->requires, 'Bumping requires would drop live Moodle 4.0-4.3 installs.');
     }
 
