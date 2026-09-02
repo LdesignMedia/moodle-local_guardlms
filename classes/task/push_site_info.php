@@ -50,10 +50,14 @@ class push_site_info extends scheduled_task {
             return;
         }
 
-        $baseurl = trim((string) get_config('local_guardlms', 'baseurl'));
+        // Only the push key gates the run. The base URL is deliberately not
+        // checked: the setting only exists on the advanced settings page, so a
+        // fresh install never stores one, and pusher::push() falls back to
+        // config::baseurl() exactly like the connect flow does. Gating on the
+        // stored value silently skipped every nightly push on such sites.
         $apikey = trim((string) get_config('local_guardlms', 'apikey'));
-        if ($baseurl === '' || $apikey === '') {
-            mtrace('GuardLMS base URL or API key not configured, skipping.');
+        if ($apikey === '') {
+            mtrace('GuardLMS API key not configured, skipping.');
             return;
         }
 

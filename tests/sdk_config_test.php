@@ -446,7 +446,7 @@ final class sdk_config_test extends \advanced_testcase {
         require($CFG->dirroot . '/local/guardlms/version.php');
 
         $this->assertSame($plugin->release, sdk_config::PLUGIN_RELEASE);
-        $this->assertSame(2026082100, $plugin->version);
+        $this->assertSame(2026090200, $plugin->version);
         $this->assertSame(2020061500, $plugin->requires, 'Bumping requires would drop live Moodle 4.0-4.3 installs.');
     }
 
