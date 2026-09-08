@@ -1,5 +1,7 @@
 # GuardLMS (local_guardlms)
 
+[![CI](https://github.com/LdesignMedia/moodle-local_guardlms/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/LdesignMedia/moodle-local_guardlms/actions/workflows/ci.yml)
+
 A Moodle local plugin that reports the site to [GuardLMS](https://github.com/LdesignMedia/guardlms)
 for security monitoring. Once a day the plugin pushes the Moodle version, the
 installed plugin inventory and the server environment to GuardLMS over HTTPS.
@@ -176,6 +178,26 @@ set it in `config.php` instead, which also makes it read-only in advanced mode:
 
 ```php
 $CFG->forced_plugin_settings['local_guardlms']['baseurl'] = 'https://guardlms.example.com';
+```
+
+## Continuous integration
+
+Every push to `main` and every pull request runs the workflow in
+`.github/workflows/ci.yml`. It reuses the
+[Catalyst Moodle workflows](https://github.com/catalyst/catalyst-moodle-workflows),
+which wrap [moodle-plugin-ci](https://github.com/moodlehq/moodle-plugin-ci) and
+run the same checks the Moodle plugins directory applies on submission: PHP
+lint, code checker, PHPDoc checker, plugin validation, upgrade savepoints,
+Mustache lint, Grunt, PHPUnit and Behat. Tests run against Moodle 4.5 through
+5.2 on PHP 8.1 to 8.4 with both PostgreSQL and MariaDB.
+
+Run the same checks locally before opening a pull request:
+
+```bash
+composer create-project -n --no-dev --prefer-dist moodlehq/moodle-plugin-ci ci ^4
+export PATH="$(pwd)/ci/bin:$(pwd)/ci/vendor/bin:$PATH"
+moodle-plugin-ci install --plugin ./moodle-local_guardlms --db-host=127.0.0.1
+moodle-plugin-ci phplint && moodle-plugin-ci phpcs --max-warnings 0 && moodle-plugin-ci phpunit
 ```
 
 ## Requirements
