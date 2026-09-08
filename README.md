@@ -184,4 +184,4 @@ $CFG->forced_plugin_settings['local_guardlms']['baseurl'] = 'https://guardlms.ex
 
 ## License
 
-GNU GPL v3 or later.
+GNU GPL v3 or later. See the [LICENSE](LICENSE) file for the full license text.
