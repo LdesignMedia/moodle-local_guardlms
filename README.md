@@ -178,10 +178,20 @@ endpoint, authenticated with the site's push key:
   Moodle code root, webserver name and version, and the session handler in use
 - `php`: PHP version, SAPI, loaded `php.ini`, memory limit, max execution time,
   upload and post size limits, timezone and the loaded extensions
-- `config` (optional, off by default): `cookiehttponly`, `cookiesecure`,
-  `cookiesamesite`, `sessiontimeout`, `passwordpolicy`, `minpasswordlength`,
-  `lockoutthreshold`, `opentogoogle`, `registerauth`, `authloginviaemail` and
-  `protectusernames`
+- `config` (optional, off by default): the settings an auditor reads under
+  Site administration > Security (site security, HTTP security,
+  notifications), plus session, authentication, web service, debugging and
+  update settings. The full key list is `collector::CONFIG_KEYS`. Secrets are
+  never sent: the cron password, reCAPTCHA keys, IP allow/block lists and
+  site policy are reported only as set/not-set flags (`cronremotepasswordset`,
+  `recaptchaconfigured`, `allowedipset`, `blockedipset`, `sitepolicyset`)
+- `securitychecks` (sent together with `config`): every check from Site
+  administration > Reports > Security, as the report itself runs them, with
+  `ref`, `component`, `name`, `status` (`ok`, `info`, `warning`, `error`,
+  `critical`, `na` or `unknown`), `summary` and `details` as plain text.
+  Details are withheld for the checks that list people (administrators,
+  users with XSS-risk capabilities, backup roles) and for checks contributed
+  by plugins, so no name or email address travels with the report
 
 Plugin versions are reported with the raw values exactly as Moodle records them,
 because GuardLMS matches CVEs on the component name and version.
@@ -286,7 +296,25 @@ a request to download.moodle.org.
     "post_max_size": "100M",
     "timezone": "Europe/Amsterdam",
     "extensions": ["Core", "curl", "json", "..."]
-  }
+  },
+  "config": {
+    "cookiesecure": "1",
+    "passwordpolicy": "1",
+    "minpasswordlength": "8",
+    "debugdisplay": "0",
+    "cronremotepasswordset": "1",
+    "...": "..."
+  },
+  "securitychecks": [
+    {
+      "ref": "core_passwordpolicy",
+      "component": "core",
+      "name": "Password policy",
+      "status": "ok",
+      "summary": "Password policy is enabled.",
+      "details": "..."
+    }
+  ]
 }
 ```
 

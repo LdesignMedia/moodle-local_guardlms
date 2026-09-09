@@ -228,4 +228,98 @@ final class collector_test extends \advanced_testcase {
         $this->assertSame($CFG->dirroot . '/mod/forum', $bycomponent['mod_forum']['path']);
         $this->assertSame('/mod/forum', $bycomponent['mod_forum']['relativepath']);
     }
+
+    /**
+     * The opt-in configuration section covers the audit settings and never a secret.
+     */
+    public function test_config_section_reports_audit_settings_without_secrets(): void {
+        $this->resetAfterTest();
+
+        set_config('debugdisplay', 1);
+        set_config('cookiesecure', 0);
+        set_config('cronremotepassword', 'top-secret');
+        set_config('allowedip', '');
+
+        $payload = collector::build_payload(true);
+
+        $config = $payload['config'];
+        $this->assertSame('1', $config['debugdisplay']);
+        $this->assertSame('0', $config['cookiesecure']);
+        $this->assertArrayHasKey('passwordpolicy', $config);
+        $this->assertArrayHasKey('enablewebservices', $config);
+        $this->assertArrayHasKey('sessiontimeout', $config);
+
+        $this->assertSame('1', $config['cronremotepasswordset']);
+        $this->assertSame('0', $config['allowedipset']);
+        $this->assertArrayNotHasKey('cronremotepassword', $config);
+        $this->assertArrayNotHasKey('recaptchaprivatekey', $config);
+        $this->assertArrayNotHasKey('allowedip', $config);
+        $this->assertStringNotContainsString('top-secret', json_encode($payload));
+
+        foreach (collector::CONFIG_KEYS as $key) {
+            $this->assertSame(
+                0,
+                preg_match('/password$|secret|privatekey|salt/', $key),
+                "{$key} looks like a credential and must not be in the allowlist."
+            );
+        }
+    }
+
+    /**
+     * Without the opt-in neither the settings nor the security report leave the site.
+     */
+    public function test_config_and_security_checks_are_absent_without_the_opt_in(): void {
+        $this->resetAfterTest();
+
+        $payload = collector::build_payload(false);
+
+        $this->assertArrayNotHasKey('config', $payload);
+        $this->assertArrayNotHasKey('securitychecks', $payload);
+    }
+
+    /**
+     * The security report is the same set of checks the admin report runs.
+     */
+    public function test_security_checks_mirror_the_security_report(): void {
+        $this->resetAfterTest();
+
+        $payload = collector::build_payload(true);
+        $checks = $payload['securitychecks'];
+
+        $expected = array_map(function ($check) {
+            return $check->get_ref();
+        }, \core\check\manager::get_checks('security'));
+        $this->assertSame($expected, array_column($checks, 'ref'));
+
+        $statuses = ['ok', 'info', 'unknown', 'warning', 'error', 'critical', 'na'];
+        foreach ($checks as $check) {
+            $this->assertSame(['ref', 'component', 'name', 'status', 'summary', 'details'], array_keys($check));
+            $this->assertContains($check['status'], $statuses, $check['ref']);
+            $this->assertNotSame('', $check['name']);
+            $this->assertStringNotContainsString('<', $check['summary'], 'Summaries are plain text.');
+            $this->assertStringNotContainsString('<', $check['details'], 'Details are plain text.');
+        }
+
+        $byref = array_column($checks, null, 'ref');
+        $this->assertArrayHasKey('core_passwordpolicy', $byref);
+        $this->assertNotSame('', $byref['core_passwordpolicy']['details']);
+    }
+
+    /**
+     * Checks that list people travel without their details.
+     *
+     * The admin report prints every administrator's name and email under
+     * riskadmin. The verdict is the audit signal; the names are personal data.
+     */
+    public function test_security_checks_withhold_user_listings(): void {
+        $this->resetAfterTest();
+
+        $admin = get_admin();
+        $payload = collector::build_payload(true);
+        $byref = array_column($payload['securitychecks'], null, 'ref');
+
+        $this->assertSame('', $byref['core_riskadmin']['details']);
+        $this->assertSame('', $byref['core_riskxss']['details']);
+        $this->assertStringNotContainsString($admin->email, json_encode($payload));
+    }
 }
