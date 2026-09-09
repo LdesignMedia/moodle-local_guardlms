@@ -36,10 +36,15 @@ final class connect_manager_test extends \advanced_testcase {
      * @return api_client
      */
     protected function stub_client(array $data): api_client {
-        $client = $this->getMockBuilder(api_client::class)
-            ->setConstructorArgs(['https://app.guardlms.example'])
-            ->onlyMethods(['exchange'])
-            ->getMock();
+        $builder = $this->getMockBuilder(api_client::class)
+            ->setConstructorArgs(['https://app.guardlms.example']);
+        // PHPUnit 8.3 introduced onlyMethods(); Moodle 3.9 ships PHPUnit 7.5.
+        if (method_exists($builder, 'onlyMethods')) {
+            $builder->onlyMethods(['exchange']);
+        } else {
+            $builder->setMethods(['exchange']);
+        }
+        $client = $builder->getMock();
         $client->method('exchange')->willReturn($data);
 
         return $client;

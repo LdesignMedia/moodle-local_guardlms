@@ -29,9 +29,9 @@ A free GuardLMS account is enough to get started.
   version, every installed plugin with its version and enabled state, the
   updates Moodle reports as available, the operating system, webserver and PHP
   configuration to GuardLMS over HTTPS.
-- **Real-time JavaScript error monitoring** (Moodle 4.4 or later). With one
-  checkbox the plugin loads the GuardLMS SDK on every page and reports browser
-  errors with stack traces and context. No learner names, email addresses or
+- **Real-time JavaScript error monitoring.** With one checkbox the plugin
+  loads the GuardLMS SDK on every page and reports browser errors with stack
+  traces and context. No learner names, email addresses or
   user IDs are sent, and clicks and form entries are never recorded.
 - **Optional page analytics.** On plans that include analytics, the same script
   can also send anonymous page views and scroll depth.
@@ -109,9 +109,10 @@ state clears as soon as a push is accepted again.
 
 ## Real-time monitoring
 
-Real-time monitoring needs a connected site and Moodle 4.4 or later, because
-the script is injected through the Moodle Hooks API. On older Moodle versions
-the checkbox is shown but has no effect.
+Real-time monitoring needs a connected site. On Moodle 4.4 and later the
+script is injected through the Hooks API (`db/hooks.php`); on Moodle 3.9 to
+4.3 the legacy `before_standard_html_head` callback in `lib.php` does the same
+job. The output and its position in the page head are identical on both paths.
 
 ### How it works
 
@@ -161,7 +162,7 @@ The real-time section on the settings page tells you why monitoring is or is
 not active: not connected yet, key not fetched yet, ready to switch on, active,
 no active subscription, switched off in the dashboard, domain mismatch between
 the site URL and the allowed domains in GuardLMS, analytics not in your plan,
-Moodle version too old, or the last refresh error.
+or the last refresh error.
 
 ## Daily inventory
 
@@ -315,8 +316,10 @@ Every push to `main` and every pull request runs the workflow in
 which wrap [moodle-plugin-ci](https://github.com/moodlehq/moodle-plugin-ci) and
 run the same checks the Moodle plugins directory applies on submission: PHP
 lint, code checker, PHPDoc checker, plugin validation, upgrade savepoints,
-Mustache lint, Grunt, PHPUnit and Behat. Tests run against Moodle 4.5 through
-5.2 on PHP 8.1 to 8.4 with both PostgreSQL and MariaDB.
+Mustache lint, Grunt, PHPUnit and Behat. The matrix is built from the
+`requires` line in `version.php` upwards, so tests run against Moodle 3.9
+through 5.2 on PHP 7.4 to 8.4 with both PostgreSQL and MariaDB, and the
+PHPCompatibility check runs at PHP 7.4.
 
 Run the same checks locally before opening a pull request:
 
@@ -329,8 +332,8 @@ moodle-plugin-ci phplint && moodle-plugin-ci phpcs --max-warnings 0 && moodle-pl
 
 ## Requirements
 
-- Moodle 3.9 or later for the daily inventory push.
-- Moodle 4.4 or later for real-time monitoring (Hooks API).
+- Moodle 3.9 or later, PHP 7.4 or later. Every feature, including real-time
+  monitoring, works on all supported versions.
 - Outbound HTTPS from the Moodle server to GuardLMS for the push, and from
   learners' browsers to GuardLMS when real-time monitoring is enabled.
 

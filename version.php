@@ -26,12 +26,11 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_guardlms';
-$plugin->version = 2026090800;
-// Deliberately not bumped to 2024042200 (Moodle 4.4) for the Hooks API. Doing
-// so would drop live 4.0-4.3 installs, which is worse than a toggle that says
-// so: below 4.4 db/hooks.php is ignored, and the settings page renders
-// "requires Moodle 4.4 or later" with the toggle disabled rather than
-// pretending it worked.
+$plugin->version = 2026090900;
+// Every feature, real-time monitoring included, supports Moodle 3.9 and later.
+// From 4.4 the head content is emitted through the Hooks API registration in
+// db/hooks.php; below it, through the legacy before_standard_html_head callback
+// in lib.php.
 $plugin->requires = 2020061500; // Moodle 3.9.
 $plugin->maturity = MATURITY_ALPHA;
-$plugin->release = '1.5.4';
+$plugin->release = '1.6.0';

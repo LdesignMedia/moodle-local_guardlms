@@ -55,6 +55,35 @@ class head_injector {
     }
 
     /**
+     * The head content emitted by the legacy before_standard_html_head callback.
+     *
+     * This is the Moodle 3.9 to 4.3 path. Those releases have no Hooks API, so
+     * lib.php is the only way into the page head - and it lands in the same
+     * place the 4.4 hook does. core_renderer::standard_head_html() calls
+     * get_plugins_with_function('before_standard_html_head', 'lib.php') before
+     * it emits its own charset meta and before $PAGE->requires->get_head_code(),
+     * so everything sdk_tags_for() documents about ordering holds here too.
+     *
+     * From 4.4 core skips this callback for a plugin that registers the
+     * deprecating hook, but the guard stays explicit: returning an empty string
+     * when the hook class exists is what stops both paths emitting the tags on
+     * a core that still calls each of them.
+     *
+     * @param bool $hooksapiavailable Whether the Hooks API handles the head instead.
+     * @param array|null $env Request environment for sdk_tags_for(); null describes the live request.
+     * @return string
+     */
+    public static function legacy_head_html(bool $hooksapiavailable, ?array $env = null): string {
+        if ($hooksapiavailable) {
+            return '';
+        }
+
+        $sdktags = $env === null ? self::sdk_tags() : self::sdk_tags_for($env);
+
+        return self::meta_tag() . $sdktags;
+    }
+
+    /**
      * Build the SDK script tags for this request, or an empty string.
      *
      * @return string

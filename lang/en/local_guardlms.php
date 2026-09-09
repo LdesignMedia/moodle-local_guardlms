@@ -81,7 +81,6 @@ $string['sdk:statusdashboardoff'] = 'Real-time monitoring is turned off in the G
 $string['sdk:statusrefresherror'] = 'The last attempt to reach GuardLMS failed: {$a}';
 $string['sdk:analyticsnotinplan'] = 'Analytics is not included in your GuardLMS plan - error monitoring is still active.';
 $string['sdk:domainmismatch'] = 'GuardLMS only accepts data from {$a->allowed}; this site reports as {$a->actual}. Update Allowed domains in the GuardLMS dashboard.';
-$string['sdk:requires44'] = 'Real-time monitoring requires Moodle 4.4 or later. The toggle has no effect on this site.';
 $string['sdk:backendunsupported'] = 'This GuardLMS instance does not support real-time monitoring yet.';
 $string['sdk:norefreshyet'] = 'No successful refresh yet.';
 $string['sdk:lastrefresh'] = 'Last successful refresh: {$a}';

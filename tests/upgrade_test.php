@@ -211,9 +211,11 @@ final class upgrade_test extends \advanced_testcase {
         $this->assertNotFalse($source);
         $this->assertStringContainsString('set_updatedcallback', $source, 'The guard is pointless if nothing registers one.');
 
-        $this->assertDoesNotMatchRegularExpression(
-            '/set_updatedcallback\(\s*[\'"]/',
-            $source,
+        // Plain preg_match rather than the regex assertions: those arrived in
+        // PHPUnit 9.1 and Moodle 3.9 ships 7.5.
+        $this->assertSame(
+            0,
+            preg_match('/set_updatedcallback\(\s*[\'"]/', $source),
             'A string callback would be skipped silently when lib.php is not loaded.'
         );
 
@@ -244,9 +246,9 @@ final class upgrade_test extends \advanced_testcase {
         $this->assertNotFalse($source);
 
         // The section gate exists and names this plugin.
-        $this->assertMatchesRegularExpression(
-            "/optional_param\(\s*'section'.*?===\s*'local_guardlms'/s",
-            $source,
+        $this->assertSame(
+            1,
+            preg_match("/optional_param\(\s*'section'.*?===\s*'local_guardlms'/s", $source),
             'The bootstrap must be gated on this plugin section actually being requested.'
         );
 
