@@ -199,4 +199,33 @@ final class collector_test extends \advanced_testcase {
         \core\update\checker::reset_caches(true);
         \core_plugin_manager::reset_caches(true);
     }
+
+    /**
+     * Every plugin reports where its code lives, on disk and as a URL path.
+     *
+     * The URL path is what an external scan needs to probe a plugin's files
+     * under the site URL, so it is derived from the real directory rather than
+     * guessed from the plugin type.
+     */
+    public function test_plugins_report_their_paths(): void {
+        global $CFG;
+
+        $this->resetAfterTest();
+
+        $payload = collector::build_payload();
+
+        $this->assertSame($CFG->dirroot, $payload['server']['dirroot']);
+
+        $bycomponent = [];
+        foreach ($payload['moodle']['plugins'] as $plugin) {
+            $this->assertArrayHasKey('path', $plugin);
+            $this->assertArrayHasKey('relativepath', $plugin);
+            $bycomponent[$plugin['component']] = $plugin;
+        }
+
+        $this->assertSame($CFG->dirroot . '/local/guardlms', $bycomponent['local_guardlms']['path']);
+        $this->assertSame('/local/guardlms', $bycomponent['local_guardlms']['relativepath']);
+        $this->assertSame($CFG->dirroot . '/mod/forum', $bycomponent['mod_forum']['path']);
+        $this->assertSame('/mod/forum', $bycomponent['mod_forum']['relativepath']);
+    }
 }

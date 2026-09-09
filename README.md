@@ -171,10 +171,11 @@ endpoint, authenticated with the site's push key:
 
 - `moodle`: release, version number, branch, every installed plugin as its
   frankenstyle component name, version, release, display name, standard/third
-  party flag and enabled state, plus the updates Moodle itself reports as
-  available for each of them
+  party flag, enabled state, absolute filesystem path and URL path below the
+  site root (for example `/mod/quiz`), plus the updates Moodle itself reports
+  as available for each of them
 - `server`: operating system family, distribution and release, hostname,
-  webserver name and version, and the session handler in use
+  Moodle code root, webserver name and version, and the session handler in use
 - `php`: PHP version, SAPI, loaded `php.ini`, memory limit, max execution time,
   upload and post size limits, timezone and the loaded extensions
 - `config` (optional, off by default): `cookiehttponly`, `cookiesecure`,
@@ -234,6 +235,8 @@ a request to download.moodle.org.
         "displayname": "Quiz",
         "isstandard": true,
         "enabled": 1,
+        "path": "/var/www/html/mod/quiz",
+        "relativepath": "/mod/quiz",
         "updates": []
       },
       {
@@ -246,6 +249,8 @@ a request to download.moodle.org.
         "displayname": "GuardLMS",
         "isstandard": false,
         "enabled": -1,
+        "path": "/var/www/html/local/guardlms",
+        "relativepath": "/local/guardlms",
         "updates": [
           {
             "version": "2026073100",
@@ -268,6 +273,7 @@ a request to download.moodle.org.
     "os_family": "Linux",
     "os": "Linux",
     "hostname": "web01",
+    "dirroot": "/var/www/html",
     "webserver": "Apache/2.4.58"
   },
   "php": {

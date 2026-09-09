@@ -141,6 +141,12 @@ class collector {
                     'displayname' => (string) $info->displayname,
                     'isstandard' => (bool) $info->is_standard(),
                     'enabled' => self::enabled_state($info),
+                    // Where the code lives, so GuardLMS can target the plugin
+                    // directly: 'path' on the filesystem, 'relativepath' as
+                    // the URL path below the site root (/mod/quiz), which is
+                    // what an external scan needs to probe a plugin's files.
+                    'path' => self::plugin_path($info),
+                    'relativepath' => self::plugin_relative_path($info),
                 ];
 
                 // Tri-state, and the distinction is the whole point of this key:
@@ -333,6 +339,8 @@ class collector {
      * @return array
      */
     protected static function server_info(): array {
+        global $CFG;
+
         $webserver = get_config('local_guardlms', 'webserver');
         if (empty($webserver)) {
             $webserver = $_SERVER['SERVER_SOFTWARE'] ?? null;
@@ -346,6 +354,8 @@ class collector {
             'os_family' => PHP_OS_FAMILY,
             'os' => PHP_OS,
             'hostname' => gethostname() ?: null,
+            // The Moodle code root every plugin 'path' sits under.
+            'dirroot' => (string) $CFG->dirroot,
             'webserver' => $webserver ?: null,
             'webserver_name' => $webservername,
             'webserver_version' => $webserverversion,
@@ -541,6 +551,45 @@ class collector {
         }
 
         return $config;
+    }
+
+    /**
+     * Absolute filesystem path of a plugin's directory.
+     *
+     * @param mixed $info Plugin info object from core_plugin_manager.
+     * @return string|null Null when the plugin manager has no directory for it.
+     */
+    protected static function plugin_path($info): ?string {
+        $rootdir = (string) ($info->rootdir ?? '');
+
+        return $rootdir === '' ? null : $rootdir;
+    }
+
+    /**
+     * A plugin's directory as a URL path below the site root, e.g. /mod/quiz.
+     *
+     * Derived from the filesystem path rather than the plugin type's URL
+     * so it stays correct for any custom subplugin location; a plugin outside
+     * $CFG->dirroot has no URL path and reports null.
+     *
+     * @param mixed $info Plugin info object from core_plugin_manager.
+     * @return string|null
+     */
+    protected static function plugin_relative_path($info): ?string {
+        global $CFG;
+
+        $rootdir = self::plugin_path($info);
+        if ($rootdir === null) {
+            return null;
+        }
+
+        $dirroot = rtrim(str_replace('\\', '/', $CFG->dirroot), '/');
+        $rootdir = str_replace('\\', '/', $rootdir);
+        if ($dirroot === '' || strpos($rootdir, $dirroot . '/') !== 0) {
+            return null;
+        }
+
+        return substr($rootdir, strlen($dirroot));
     }
 
     /**
