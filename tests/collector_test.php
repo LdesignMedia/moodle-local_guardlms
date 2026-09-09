@@ -248,6 +248,7 @@ final class collector_test extends \advanced_testcase {
         $this->assertArrayHasKey('passwordpolicy', $config);
         $this->assertArrayHasKey('enablewebservices', $config);
         $this->assertArrayHasKey('sessiontimeout', $config);
+        $this->assertArrayHasKey('mnet_dispatcher_mode', $config);
 
         $this->assertSame('1', $config['cronremotepasswordset']);
         $this->assertSame('0', $config['allowedipset']);

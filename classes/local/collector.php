@@ -115,6 +115,8 @@ class collector {
         'guestloginbutton',
         'allowaccountssameemail',
         'loginpasswordautocomplete',
+        // Moodle networking (MNet). 'off' when the dispatcher is disabled.
+        'mnet_dispatcher_mode',
         // Web services.
         'enablewebservices',
         'enablemobilewebservice',
