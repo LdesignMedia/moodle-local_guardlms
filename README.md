@@ -1,3 +1,9 @@
+<p align="center">
+  <a href="https://guardlms.com">
+    <img src=".github/assets/banner-1544x500.png" alt="GuardLMS: continuous CVE monitoring for your Moodle site" width="772">
+  </a>
+</p>
+
 # GuardLMS (local_guardlms)
 
 [![CI](https://github.com/LdesignMedia/moodle-local_guardlms/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/LdesignMedia/moodle-local_guardlms/actions/workflows/ci.yml)
