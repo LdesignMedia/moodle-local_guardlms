@@ -202,7 +202,7 @@ if ($hassiteconfig) {
             // a warning, not information: the site is loading third-party
             // JavaScript the admin probably wants to stop.
             $alertclass = 'alert alert-info';
-            if (in_array($sdkstatus['row'], [2, 4, 5, 7, 8], true)) {
+            if (in_array($sdkstatus['row'], [2, 4, 5, 7], true)) {
                 $alertclass = 'alert alert-warning';
             } else if ($sdkstatus['row'] === 0) {
                 $alertclass = 'alert alert-success';
@@ -258,26 +258,16 @@ if ($hassiteconfig) {
                 $sdkdesc
             ));
 
-            if ($sdkstatus['toggledisabled']) {
-                $settings->add(new \local_guardlms\admin\setting_configcheckbox_disabled(
-                    'local_guardlms/sdkenabled',
-                    get_string('settings:sdkenabled', 'local_guardlms'),
-                    get_string('settings:sdkenabled_desc', 'local_guardlms'),
-                    0,
-                    'sdk:requires44'
-                ));
-            } else {
-                $sdkenabled = new admin_setting_configcheckbox(
-                    'local_guardlms/sdkenabled',
-                    get_string('settings:sdkenabled', 'local_guardlms'),
-                    get_string('settings:sdkenabled_desc', 'local_guardlms'),
-                    0
-                );
-                // Queue the refresh rather than fetching inline: a slow HTTP
-                // call must never block a settings save.
-                $sdkenabled->set_updatedcallback($sdkupdated);
-                $settings->add($sdkenabled);
-            }
+            $sdkenabled = new admin_setting_configcheckbox(
+                'local_guardlms/sdkenabled',
+                get_string('settings:sdkenabled', 'local_guardlms'),
+                get_string('settings:sdkenabled_desc', 'local_guardlms'),
+                0
+            );
+            // Queue the refresh rather than fetching inline: a slow HTTP call
+            // must never block a settings save.
+            $sdkenabled->set_updatedcallback($sdkupdated);
+            $settings->add($sdkenabled);
 
             if ($sdkstatus['analyticsdisabled']) {
                 $settings->add(new \local_guardlms\admin\setting_configcheckbox_disabled(
@@ -285,7 +275,7 @@ if ($hassiteconfig) {
                     get_string('settings:sdkanalytics', 'local_guardlms'),
                     get_string('settings:sdkanalytics_desc', 'local_guardlms'),
                     0,
-                    $sdkstatus['toggledisabled'] ? 'sdk:requires44' : 'sdk:analyticsnotinplan'
+                    'sdk:analyticsnotinplan'
                 ));
             } else {
                 $sdkanalytics = new admin_setting_configcheckbox(

@@ -60,11 +60,6 @@ final class sdk_config_test extends \advanced_testcase {
      * Put the site into the healthy, monitored state.
      */
     private function set_up_healthy(): void {
-        global $CFG;
-
-        // Pin a Moodle new enough for the Hooks API so row 8 never fires by
-        // accident on whichever core this suite happens to run against.
-        $CFG->version = sdk_config::HOOKS_API_VERSION;
         sdk_config::store_payload($this->payload());
         set_config('sdkenabled', 1, 'local_guardlms');
         set_config('sdkanalytics', 1, 'local_guardlms');
@@ -221,10 +216,7 @@ final class sdk_config_test extends \advanced_testcase {
      * F1: the same escaping holds through the status chain that renders it.
      */
     public function test_a_hostile_refresh_error_stays_escaped_through_status(): void {
-        global $CFG;
-
         $this->resetAfterTest();
-        $CFG->version = sdk_config::HOOKS_API_VERSION;
 
         sdk_config::record_refresh_error('</div><script>alert(1)</script>');
 
@@ -239,10 +231,7 @@ final class sdk_config_test extends \advanced_testcase {
      * F1: backend-supplied domain names are escaped in the mismatch advisory.
      */
     public function test_hostile_allowed_domains_are_escaped_in_the_advisory(): void {
-        global $CFG;
-
         $this->resetAfterTest();
-        $CFG->version = sdk_config::HOOKS_API_VERSION;
 
         sdk_config::store_payload($this->payload([
             'allowed_domains' => ['<script>alert(1)</script>', 'ok.example.com'],
@@ -279,7 +268,6 @@ final class sdk_config_test extends \advanced_testcase {
         $this->assertFalse($status['hidden'], 'Hiding this would remove the only way to switch injection off.');
         $this->assertSame(2, $status['row']);
         $this->assertSame('sdk:backendunsupportedactive', $status['headline']);
-        $this->assertFalse($status['toggledisabled'], 'The admin must be able to untick it.');
 
         // Injection continues deliberately: one failed refresh must not
         // silently kill a working install.
@@ -327,10 +315,7 @@ final class sdk_config_test extends \advanced_testcase {
      * usual sentence points at a control that is not on the page.
      */
     public function test_row1_tells_a_disconnected_site_to_connect(): void {
-        global $CFG;
-
         $this->resetAfterTest();
-        $CFG->version = sdk_config::HOOKS_API_VERSION;
 
         unset_config('apikey', 'local_guardlms');
         unset_config('connectedat', 'local_guardlms');
@@ -446,8 +431,12 @@ final class sdk_config_test extends \advanced_testcase {
         require($CFG->dirroot . '/local/guardlms/version.php');
 
         $this->assertSame($plugin->release, sdk_config::PLUGIN_RELEASE);
-        $this->assertSame(2026090800, $plugin->version);
-        $this->assertSame(2020061500, $plugin->requires, 'Bumping requires would drop live Moodle 4.0-4.3 installs.');
+        $this->assertSame(2026090900, $plugin->version);
+        $this->assertSame(
+            2020061500,
+            $plugin->requires,
+            'Bumping requires would drop the Moodle 3.9 to 4.3 installs this plugin supports.'
+        );
     }
 
     /**
@@ -460,7 +449,7 @@ final class sdk_config_test extends \advanced_testcase {
         $CFG->release = '4.5.2+ (Build: 20250109)';
 
         $this->assertSame('moodle-4.5.2/local_guardlms-' . sdk_config::PLUGIN_RELEASE, sdk_config::app_version());
-        $this->assertMatchesRegularExpression('/^moodle-/', sdk_config::app_version());
+        $this->assertSame(1, preg_match('/^moodle-/', sdk_config::app_version()));
     }
 
     /**
@@ -472,22 +461,7 @@ final class sdk_config_test extends \advanced_testcase {
         $this->resetAfterTest();
         $CFG->release = 'dev-main';
 
-        $this->assertMatchesRegularExpression('/^moodle-/', sdk_config::app_version());
-    }
-
-    /**
-     * Row 8 is detected from the core version, not from the plugin's requires.
-     */
-    public function test_moodle_below_44_is_detected(): void {
-        global $CFG;
-
-        $this->resetAfterTest();
-
-        $CFG->version = 2023100900;
-        $this->assertFalse(sdk_config::moodle_supports_injection());
-
-        $CFG->version = sdk_config::HOOKS_API_VERSION;
-        $this->assertTrue(sdk_config::moodle_supports_injection());
+        $this->assertSame(1, preg_match('/^moodle-/', sdk_config::app_version()));
     }
 
     /**
@@ -540,36 +514,10 @@ final class sdk_config_test extends \advanced_testcase {
     }
 
     /**
-     * §5.3 row 8 beats every row except 2.
-     */
-    public function test_status_row8_requires44_beats_rows_5_4_7_and_1(): void {
-        global $CFG;
-
-        $this->resetAfterTest();
-
-        $CFG->version = 2023100900;
-        sdk_config::store_payload($this->payload([
-            'enabled' => false,
-            'subscription_active' => false,
-        ]));
-        sdk_config::record_refresh_error('a failure');
-
-        $status = sdk_config::status();
-
-        $this->assertSame(8, $status['row']);
-        $this->assertSame('sdk:requires44', $status['headline']);
-        $this->assertTrue($status['toggledisabled']);
-        $this->assertFalse($status['hidden']);
-    }
-
-    /**
      * §5.3 row 5 beats rows 4, 7 and 1.
      */
     public function test_status_row5_dashboard_off_beats_rows_4_7_and_1(): void {
-        global $CFG;
-
         $this->resetAfterTest();
-        $CFG->version = sdk_config::HOOKS_API_VERSION;
 
         sdk_config::store_payload($this->payload([
             'enabled' => false,
@@ -588,10 +536,7 @@ final class sdk_config_test extends \advanced_testcase {
      * §5.3 row 4 beats rows 7 and 1.
      */
     public function test_status_row4_no_subscription_beats_rows_7_and_1(): void {
-        global $CFG;
-
         $this->resetAfterTest();
-        $CFG->version = sdk_config::HOOKS_API_VERSION;
 
         sdk_config::store_payload($this->payload([
             'subscription_active' => false,
@@ -609,10 +554,7 @@ final class sdk_config_test extends \advanced_testcase {
      * §5.3 row 7 beats row 1, which is UX7's precedence requirement.
      */
     public function test_status_row7_refresh_error_beats_row1(): void {
-        global $CFG;
-
         $this->resetAfterTest();
-        $CFG->version = sdk_config::HOOKS_API_VERSION;
 
         // No key and a failed refresh: rows 1 and 7 are both true.
         sdk_config::record_refresh_error('connection refused');
@@ -639,10 +581,7 @@ final class sdk_config_test extends \advanced_testcase {
      * answer beats a confident wrong one, which is the whole point of §5.3.
      */
     public function test_a_site_that_never_refreshed_reports_no_key_not_dashboard_off(): void {
-        global $CFG;
-
         $this->resetAfterTest();
-        $CFG->version = sdk_config::HOOKS_API_VERSION;
 
         // A connected site that has never had a successful refresh. Nothing is
         // stored, so every backend-asserted flag reads false by default - the
@@ -674,10 +613,7 @@ final class sdk_config_test extends \advanced_testcase {
      * would never render at all.
      */
     public function test_the_same_flags_are_believed_once_a_payload_exists(): void {
-        global $CFG;
-
         $this->resetAfterTest();
-        $CFG->version = sdk_config::HOOKS_API_VERSION;
 
         sdk_config::store_payload($this->payload(['enabled' => false]));
 
@@ -741,10 +677,7 @@ final class sdk_config_test extends \advanced_testcase {
      * §5.3 row 3 is an advisory: it renders alongside the chosen headline.
      */
     public function test_status_row3_analytics_advisory_is_not_exclusive(): void {
-        global $CFG;
-
         $this->resetAfterTest();
-        $CFG->version = sdk_config::HOOKS_API_VERSION;
 
         sdk_config::store_payload($this->payload([
             'analytics_allowed' => false,
@@ -762,10 +695,7 @@ final class sdk_config_test extends \advanced_testcase {
      * §5.3 row 6 is an advisory naming both hosts.
      */
     public function test_status_row6_domain_mismatch_advisory_names_both_hosts(): void {
-        global $CFG;
-
         $this->resetAfterTest();
-        $CFG->version = sdk_config::HOOKS_API_VERSION;
 
         sdk_config::store_payload($this->payload([
             'allowed_domains' => ['example.com'],
@@ -834,21 +764,25 @@ final class sdk_config_test extends \advanced_testcase {
     }
 
     /**
-     * A Moodle that ignores db/hooks.php never counts as injectable.
+     * Moodle 3.9 is injectable: there is no core-version gate left.
      *
-     * The settings page tells these sites the toggle has no effect; this is
-     * what keeps that promise true no matter which caller asks.
+     * The legacy before_standard_html_head callback in lib.php reaches the page
+     * head on every release below 4.4, in the same position the 4.4 hook
+     * occupies, so nothing about the core version can stop the SDK loading once
+     * the site is configured for it.
+     *
+     * Nothing under test reads $CFG->version any more. The pin is a regression
+     * guard: a reintroduced core-version gate would fail here first.
      */
-    public function test_injection_is_refused_below_moodle_44(): void {
+    public function test_injection_allowed_on_moodle_39(): void {
         global $CFG;
 
         $this->resetAfterTest();
 
         $this->set_up_healthy();
-        $this->assertTrue(sdk_config::injection_allowed());
+        $CFG->version = 2020061500;
 
-        $CFG->version = 2023100900;
-        $this->assertFalse(sdk_config::injection_allowed());
+        $this->assertTrue(sdk_config::injection_allowed());
     }
 
     /**

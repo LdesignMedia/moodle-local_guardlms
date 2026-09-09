@@ -24,24 +24,22 @@
  */
 
 /**
- * Inject the GuardLMS ownership verification meta tag into the page head.
+ * Inject the GuardLMS head content into the page head.
  *
- * Used on Moodle <= 4.3; from 4.4 the before_standard_head_html_generation
- * hook in classes/hook_callbacks.php takes over (this callback returns an
- * empty string there to avoid emitting the tag twice).
+ * This is the Moodle 3.9 to 4.3 path: those releases have no Hooks API, so the
+ * ownership verification meta tag and the real-time monitoring SDK are both
+ * emitted from here. From 4.4 the before_standard_head_html_generation hook
+ * registered in db/hooks.php takes over, and this callback returns an empty
+ * string there so the tags are never emitted twice.
  *
  * @return string
  */
 function local_guardlms_before_standard_html_head(): string {
-    if (class_exists(\core\hook\output\before_standard_head_html_generation::class)) {
-        return '';
-    }
-
-    // Only the meta tag. The SDK is deliberately not injected on Moodle below
-    // 4.4: this legacy callback was removed in 4.4, so a site old enough to
-    // reach it is a site the real-time feature does not support, and the
-    // settings page says so rather than pretending the toggle worked.
-    return \local_guardlms\local\head_injector::meta_tag();
+    // Core skips this callback for plugins that register the deprecating hook,
+    // but the guard stays explicit rather than relying on that behaviour.
+    return \local_guardlms\local\head_injector::legacy_head_html(
+        class_exists(\core\hook\output\before_standard_head_html_generation::class)
+    );
 }
 
 // The real-time monitoring settings callback deliberately does NOT live here.

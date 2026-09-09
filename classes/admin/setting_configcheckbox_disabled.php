@@ -28,11 +28,10 @@ namespace local_guardlms\admin;
 /**
  * A checkbox an admin can see but cannot change.
  *
- * Used where the setting exists but cannot take effect on this site - a Moodle
- * below 4.4, where db/hooks.php is ignored, or a plan without analytics. Hiding
- * the setting outright would leave the admin looking for a feature the
- * documentation promises; rendering it live would leave them believing they had
- * switched something on.
+ * Used where the setting exists but cannot take effect on this site - today,
+ * a GuardLMS plan that does not include analytics. Hiding the setting outright
+ * would leave the admin looking for a feature the documentation promises;
+ * rendering it live would leave them believing they had switched something on.
  *
  * write_setting() ignores whatever is posted, so the control is inert against a
  * hand-crafted POST as well as in the browser.

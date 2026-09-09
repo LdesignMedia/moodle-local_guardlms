@@ -51,9 +51,6 @@ final class sdk_tags_test extends \advanced_testcase {
      * Put the site into the state where injection is expected.
      */
     private function set_up_injectable(): void {
-        global $CFG;
-
-        $CFG->version = sdk_config::HOOKS_API_VERSION;
         sdk_config::store_payload([
             'key' => 'glms_' . str_repeat('a', 56),
             'key_prefix' => 'glms_aaa',
@@ -251,7 +248,7 @@ final class sdk_tags_test extends \advanced_testcase {
         $this->assertSame('production', $config['releaseStage']);
         $this->assertFalse($config['collectUserIp']);
         $this->assertFalse($config['interactionBreadcrumbsEnabled']);
-        $this->assertMatchesRegularExpression('/^moodle-/', $config['appVersion']);
+        $this->assertSame(1, preg_match('/^moodle-/', $config['appVersion']));
     }
 
     /**

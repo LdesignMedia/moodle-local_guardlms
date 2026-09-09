@@ -49,10 +49,7 @@ class sdk_config {
      * emitted appVersion is load-bearing for the backend's platform alert
      * (it matches ^(wordpress|moodle)-) and must not drift silently.
      */
-    public const PLUGIN_RELEASE = '1.5.4';
-
-    /** @var int Moodle version that introduced the Hooks API (4.4). Below this nothing is injected. */
-    public const HOOKS_API_VERSION = 2024042200;
+    public const PLUGIN_RELEASE = '1.6.0';
 
     /** @var int Seconds between two synchronous bootstrap attempts from the settings page. */
     public const BOOTSTRAP_THROTTLE = 300;
@@ -335,20 +332,6 @@ class sdk_config {
     }
 
     /**
-     * Whether this Moodle is new enough for db/hooks.php to be honoured (§5.3 row 8).
-     *
-     * Below 4.4 the hook is never dispatched, so neither the verification meta
-     * tag nor the SDK is injected and the toggle cannot do anything.
-     *
-     * @return bool
-     */
-    public static function moodle_supports_injection(): bool {
-        global $CFG;
-
-        return (int) $CFG->version >= self::HOOKS_API_VERSION;
-    }
-
-    /**
      * Whether a payload has ever been stored.
      *
      * Rows 3, 4, 5 and 6 of §5.3 are all facts asserted by the backend. Before
@@ -490,13 +473,7 @@ class sdk_config {
      * @return bool
      */
     public static function injection_allowed(): bool {
-        // The version check is unreachable through today's only caller - below
-        // 4.4 the hook never fires - but it is what makes this method mean what
-        // its name says. Without it, wiring sdk_tags() into the legacy lib.php
-        // callback would inject on exactly the sites whose settings page says
-        // the toggle has no effect.
-        return self::moodle_supports_injection()
-            && self::is_enabled()
+        return self::is_enabled()
             && self::backend_enabled()
             && self::subscription_active()
             && self::key() !== ''
@@ -515,13 +492,13 @@ class sdk_config {
     /**
      * Resolve §5.3 to exactly one headline plus any advisories.
      *
-     * The precedence chain is 2 -> 8 -> 5 -> 4 -> 7 -> 1. Rows 6 and 3 are
+     * The precedence chain is 2 -> 5 -> 4 -> 7 -> 1. Rows 6 and 3 are
      * non-exclusive advisories: they render in addition to the headline,
      * because a domain mismatch or a missing analytics entitlement is worth
      * saying even on an otherwise healthy site.
      *
      * @return array{hidden: bool, row: int, headline: string, headlinedata: mixed,
-     *               advisories: array, toggledisabled: bool, analyticsdisabled: bool}
+     *               advisories: array, analyticsdisabled: bool}
      */
     public static function status(): array {
         $status = [
@@ -530,7 +507,6 @@ class sdk_config {
             'headline' => 'sdk:statusready',
             'headlinedata' => null,
             'advisories' => [],
-            'toggledisabled' => false,
             'analyticsdisabled' => false,
         ];
 
@@ -580,16 +556,6 @@ class sdk_config {
                     'actual' => s(self::site_host()),
                 ],
             ];
-        }
-
-        // Row 8 - this Moodle ignores db/hooks.php, so the toggle cannot work.
-        if (!self::moodle_supports_injection()) {
-            $status['row'] = 8;
-            $status['headline'] = 'sdk:requires44';
-            $status['toggledisabled'] = true;
-            $status['analyticsdisabled'] = true;
-
-            return $status;
         }
 
         // Row 5 - turned off in the GuardLMS dashboard.

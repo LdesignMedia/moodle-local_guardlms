@@ -16,10 +16,6 @@ Feature: Real-time monitoring settings tell an admin what is going on
   # set): a test site must never call the live backend, and the error response
   # would overwrite the fixture state these scenarios assert.
   #
-  # UX8 (Moodle below 4.4) has no scenario here. Detecting it needs $CFG->version
-  # moved backwards, which Behat cannot do without breaking the site under test.
-  # It is covered by sdk_config_test::test_status_row8_requires44_beats_rows_5_4_7_and_1.
-  #
   # The sdkrefresh.php refusal paths (missing sesskey, missing capability) have
   # no scenario either: Moodle renders those as fatal-error pages, and Behat's
   # automatic after-step exception check fails any step that lands on one, so
@@ -27,7 +23,7 @@ Feature: Real-time monitoring settings tell an admin what is going on
   # calls (require_capability before require_sesskey, so the capability fails
   # first and does not leak that the endpoint exists).
   #
-  # The precedence chain is 2 -> 8 -> 5 -> 4 -> 7 -> 1. Rows 3 and 6 are
+  # The precedence chain is 2 -> 5 -> 4 -> 7 -> 1. Rows 3 and 6 are
   # advisories and render alongside whichever headline the chain selected.
 
   Background:
