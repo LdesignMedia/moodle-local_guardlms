@@ -49,21 +49,108 @@ class collector {
     /**
      * Moodle config keys reported when the admin opts in to send configuration.
      *
-     * Limited to security and session relevant settings so GuardLMS can review
-     * how a site is hardened. Never includes secrets.
+     * Mirrors the settings pages an auditor reads: Site administration >
+     * Security (site security, HTTP security, notifications), the session,
+     * authentication, web service, debugging and update pages. Values are
+     * reported as Moodle stores them. Never includes secrets: the settings
+     * that hold one are reported as a set/not-set flag in DERIVED_FLAGS.
      */
-    protected const CONFIG_KEYS = [
-        'cookiehttponly',
-        'cookiesecure',
-        'cookiesamesite',
-        'sessiontimeout',
+    public const CONFIG_KEYS = [
+        // Site security settings.
+        'protectusernames',
+        'forcelogin',
+        'forceloginforprofiles',
+        'forceloginforprofileimage',
+        'opentowebcrawlers',
+        'allowindexing',
+        'maxbytes',
+        'allowobjectembed',
+        'enabletrusttext',
+        'maxeditingtime',
+        'extendedusernamechars',
+        'profilesforenrolledusersonly',
+        'cronclionly',
+        'allowbeforeblock',
+        'lockoutthreshold',
+        'lockoutwindow',
+        'lockoutduration',
         'passwordpolicy',
         'minpasswordlength',
-        'lockoutthreshold',
-        'opentogoogle',
+        'minpassworddigits',
+        'minpasswordlower',
+        'minpasswordupper',
+        'minpasswordnonalphanum',
+        'maxconsecutiveidentchars',
+        'passwordpolicycheckonlogin',
+        'passwordreuselimit',
+        'passwordchangelogout',
+        'passwordchangetokendeletion',
+        'tokenduration',
+        'groupenrolmentkeypolicy',
+        'disableuserimages',
+        'emailchangeconfirmation',
+        'rememberusername',
+        'strictformsrequired',
+        // HTTP security.
+        'cookiesecure',
+        'cookiehttponly',
+        'cookiesamesite',
+        'allowframembedding',
+        'curlsecurityblockedhosts',
+        'curlsecurityallowedport',
+        'referrerpolicy',
+        'slasharguments',
+        // Notifications.
+        'displayloginfailures',
+        'notifyloginfailures',
+        'notifyloginthreshold',
+        // Session handling.
+        'sessiontimeout',
+        'sessiontimeoutwarning',
+        // Authentication and account creation.
+        'auth',
         'registerauth',
         'authloginviaemail',
-        'protectusernames',
+        'authpreventaccountcreation',
+        'guestloginbutton',
+        'allowaccountssameemail',
+        'loginpasswordautocomplete',
+        // Web services.
+        'enablewebservices',
+        'enablemobilewebservice',
+        'enablewsdocumentation',
+        'webserviceprotocols',
+        // Debugging.
+        'debug',
+        'debugdisplay',
+        'debugsmtp',
+        'perfdebug',
+        'debugstringids',
+        'debugsqltrace',
+        'debugvalidators',
+        'debugpageinfo',
+        'debugtemplateinfo',
+        'themedesignermode',
+        'cachejs',
+        // Update notifications.
+        'updateautocheck',
+        'updateminmaturity',
+    ];
+
+    /**
+     * Settings whose value is a secret or otherwise private, reported only as
+     * "is set" ('1') or "is empty" ('0') under the given key.
+     *
+     * The cron password and reCAPTCHA keys are credentials. The IP lists are
+     * not secrets, but they describe internal network layout, and whether a
+     * restriction exists is all an audit needs.
+     */
+    public const DERIVED_FLAGS = [
+        'cronremotepasswordset' => ['cronremotepassword'],
+        'recaptchaconfigured' => ['recaptchapublickey', 'recaptchaprivatekey'],
+        'allowedipset' => ['allowedip'],
+        'blockedipset' => ['blockedip'],
+        'sitepolicyset' => ['sitepolicy'],
     ];
 
     /**
@@ -96,6 +183,7 @@ class collector {
 
         if ($includeconfig) {
             $payload['config'] = self::config_info();
+            $payload['securitychecks'] = security_report::collect();
         }
 
         return $payload;
@@ -543,11 +631,25 @@ class collector {
         $config = [];
 
         foreach (self::CONFIG_KEYS as $key) {
+            // Read through get_config(), which honours values forced from config.php, so this is
+            // what the site actually runs with.
             $value = get_config('moodle', $key);
             if ($value === false) {
                 continue;
             }
             $config[$key] = (string) $value;
+        }
+
+        foreach (self::DERIVED_FLAGS as $flag => $sources) {
+            $set = true;
+            foreach ($sources as $source) {
+                $value = get_config('moodle', $source);
+                if ($value === false || trim((string) $value) === '') {
+                    $set = false;
+                    break;
+                }
+            }
+            $config[$flag] = $set ? '1' : '0';
         }
 
         return $config;
