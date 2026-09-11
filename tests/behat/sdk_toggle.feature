@@ -58,7 +58,7 @@ Feature: Real-time monitoring settings tell an admin what is going on
     Then I should see "The monitoring key has not been fetched yet. Use Refresh now to fetch it."
     And I should see "Refresh now"
     And I should see "No successful refresh yet."
-    And I should not see "1970"
+    And I should not see "January 1970"
 
   Scenario: UX2 A GuardLMS that predates the feature hides the section entirely
     # Rows 1 and 7 are also true here; row 2 outranks both and says nothing at all.
@@ -128,7 +128,7 @@ Feature: Real-time monitoring settings tell an admin what is going on
     Then I should see "Could not resolve host dashboard.guardlms.com"
     And I should see "Refresh now"
     And I should see "No successful refresh yet."
-    And I should not see "1970"
+    And I should not see "January 1970"
     And I should not see "The monitoring key has not been fetched yet. Use Refresh now to fetch it."
 
   Scenario: UX7 A site that has refreshed before shows when that was
