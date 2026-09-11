@@ -241,9 +241,19 @@ if ($hassiteconfig) {
 
                 // The self-test only proves anything once something would
                 // actually be injected.
+                //
+                // Targets this settings page, not the front page: with the
+                // default $CFG->defaulthomepage (My Moodle) index.php redirects
+                // a logged-in user to /my/ and drops the query string, so the
+                // probe never fires. The settings page never redirects, gets
+                // the SDK like every other admin page, and lands the admin
+                // back where the result is checked.
                 if (\local_guardlms\local\sdk_config::injection_allowed()) {
                     $sdkactions .= html_writer::link(
-                        new moodle_url('/', ['guardlmsselftest' => 1]),
+                        new moodle_url('/admin/settings.php', [
+                            'section' => 'local_guardlms',
+                            'guardlmsselftest' => 1,
+                        ]),
                         get_string('sdk:testerror', 'local_guardlms'),
                         ['class' => 'btn local-guardlms-btn-disconnect']
                     );
