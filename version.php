@@ -26,11 +26,11 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_guardlms';
-$plugin->version = 2026090903;
+$plugin->version = 2026091100;
 // Every feature, real-time monitoring included, supports Moodle 3.9 and later.
 // From 4.4 the head content is emitted through the Hooks API registration in
 // db/hooks.php; below it, through the legacy before_standard_html_head callback
 // in lib.php.
 $plugin->requires = 2020061500; // Moodle 3.9.
 $plugin->maturity = MATURITY_ALPHA;
-$plugin->release = '1.6.0';
+$plugin->release = '1.6.1';
