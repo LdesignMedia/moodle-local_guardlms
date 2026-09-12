@@ -49,7 +49,7 @@ class sdk_config {
      * emitted appVersion is load-bearing for the backend's platform alert
      * (it matches ^(wordpress|moodle)-) and must not drift silently.
      */
-    public const PLUGIN_RELEASE = '1.6.1';
+    public const PLUGIN_RELEASE = '1.7.0';
 
     /** @var int Seconds between two synchronous bootstrap attempts from the settings page. */
     public const BOOTSTRAP_THROTTLE = 300;

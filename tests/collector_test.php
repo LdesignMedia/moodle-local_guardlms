@@ -201,7 +201,7 @@ final class collector_test extends \advanced_testcase {
     }
 
     /**
-     * Every plugin reports where its code lives, on disk and as a URL path.
+     * Every plugin reports its public URL path without disclosing its filesystem path.
      *
      * The URL path is what an external scan needs to probe a plugin's files
      * under the site URL, so it is derived from the real directory rather than
@@ -214,18 +214,18 @@ final class collector_test extends \advanced_testcase {
 
         $payload = collector::build_payload();
 
-        $this->assertSame($CFG->dirroot, $payload['server']['dirroot']);
+        $this->assertArrayNotHasKey('dirroot', $payload['server']);
+        $this->assertArrayNotHasKey('hostname', $payload['server']);
+        $this->assertArrayNotHasKey('ini', $payload['php']);
 
         $bycomponent = [];
         foreach ($payload['moodle']['plugins'] as $plugin) {
-            $this->assertArrayHasKey('path', $plugin);
+            $this->assertArrayNotHasKey('path', $plugin);
             $this->assertArrayHasKey('relativepath', $plugin);
             $bycomponent[$plugin['component']] = $plugin;
         }
 
-        $this->assertSame($CFG->dirroot . '/local/guardlms', $bycomponent['local_guardlms']['path']);
         $this->assertSame('/local/guardlms', $bycomponent['local_guardlms']['relativepath']);
-        $this->assertSame($CFG->dirroot . '/mod/forum', $bycomponent['mod_forum']['path']);
         $this->assertSame('/mod/forum', $bycomponent['mod_forum']['relativepath']);
     }
 
@@ -275,11 +275,12 @@ final class collector_test extends \advanced_testcase {
         $payload = collector::build_payload(false);
 
         $this->assertArrayNotHasKey('config', $payload);
+        $this->assertArrayNotHasKey('security_config', $payload);
         $this->assertArrayNotHasKey('securitychecks', $payload);
     }
 
     /**
-     * The security report is the same set of checks the admin report runs.
+     * Only recognised checks from the admin report are exported, without rendered prose.
      */
     public function test_security_checks_mirror_the_security_report(): void {
         $this->resetAfterTest();
@@ -290,7 +291,7 @@ final class collector_test extends \advanced_testcase {
         $expected = array_map(function ($check) {
             return $check->get_ref();
         }, \core\check\manager::get_checks('security'));
-        $this->assertSame($expected, array_column($checks, 'ref'));
+        $this->assertSame([], array_diff(array_column($checks, 'ref'), $expected));
 
         $statuses = ['ok', 'info', 'unknown', 'warning', 'error', 'critical', 'na'];
         foreach ($checks as $check) {
@@ -303,7 +304,7 @@ final class collector_test extends \advanced_testcase {
 
         $byref = array_column($checks, null, 'ref');
         $this->assertArrayHasKey('core_passwordpolicy', $byref);
-        $this->assertNotSame('', $byref['core_passwordpolicy']['details']);
+        $this->assertSame('', $byref['core_passwordpolicy']['details']);
     }
 
     /**
