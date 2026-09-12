@@ -63,5 +63,18 @@ function xmldb_local_guardlms_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2026082100, 'local', 'guardlms');
     }
 
+    if ($oldversion < 2026091201) {
+        global $DB;
+        $table = new xmldb_table('local_guardlms_sql_sent');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
+        $table->add_field('logid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_index('logid', XMLDB_INDEX_UNIQUE, ['logid']);
+        if (!$DB->get_manager()->table_exists($table)) {
+            $DB->get_manager()->create_table($table);
+        }
+        upgrade_plugin_savepoint(true, 2026091201, 'local', 'guardlms');
+    }
+
     return true;
 }

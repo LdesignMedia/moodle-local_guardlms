@@ -35,6 +35,7 @@
  * @return string
  */
 function local_guardlms_before_standard_html_head(): string {
+    \local_guardlms\local\server_errors::observe_rendered_exception();
     // Core skips this callback for plugins that register the deprecating hook,
     // but the guard stays explicit rather than relying on that behaviour.
     return \local_guardlms\local\head_injector::legacy_head_html(
@@ -42,8 +43,15 @@ function local_guardlms_before_standard_html_head(): string {
     );
 }
 
-// The real-time monitoring settings callback deliberately does NOT live here.
-// admin_setting::write_setting() guards its updated callback with is_callable()
-// and skips it silently when the function is not loaded, and this file is only
-// included for plugins that declare before_session_start or after_config. See
-// \local_guardlms\task\refresh_sdk_config::queue_if_connected().
+// Settings callbacks use autoloadable classes so they also work when lib.php is
+// not loaded (for example, on releases using the after_config hook).
+
+/**
+ * Start opt-in server reporting after Moodle has loaded configuration.
+ */
+function local_guardlms_after_config(): void {
+    if (class_exists(\core\hook\after_config::class)) {
+        return;
+    }
+    \local_guardlms\local\server_errors::start();
+}

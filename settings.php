@@ -299,6 +299,15 @@ if ($hassiteconfig) {
             }
         }
 
+        $servererrors = new admin_setting_configcheckbox(
+            'local_guardlms/servererrorsenabled',
+            get_string('settings:servererrorsenabled', 'local_guardlms'),
+            get_string('settings:servererrorsenabled_desc', 'local_guardlms'),
+            0
+        );
+        $servererrors->set_updatedcallback([\local_guardlms\local\server_errors::class, 'settings_updated']);
+        $settings->add($servererrors);
+
         // Everything below is advanced: an end user only needs the button above.
         // The apikey and the verification token are connection internals written
         // by the connect flow (connect_manager::complete_connect) and are never

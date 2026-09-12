@@ -422,3 +422,56 @@ moodledata is inside the public directory. CLI and web contexts are separate;
 cron results do not establish web-user permissions. The checks do not create
 files or export absolute paths, owners or file contents. The receiver must
 support these new sections before this connector is deployed.
+
+## Server errors (opt-in)
+
+Enable **Report PHP and SQL errors** in the plugin settings. This is independent
+of the browser SDK checkbox and defaults to off. A connected site, valid SDK key
+and active GuardLMS monitoring are required. Deploy GuardLMS with PHP/SQL ingest
+support and run both the GuardLMS migration and Moodle plugin upgrade first.
+
+To enforce the setting in `config.php` (before loading `lib/setup.php`):
+
+```php
+$CFG->forced_plugin_settings['local_guardlms']['servererrorsenabled'] = true;
+```
+
+Set it to `false` to enforce an opt-out. When enabled and connected, the plugin
+forces `$CFG->dboptions['logerrors'] = true` and updates the active database
+connection's copied option. The native option is **logerrors**, despite the
+singular `logerror` in some config examples. Existing `logslow` and other options
+are preserved. No config.php file is rewritten; overrides last for the request.
+
+Uncaught PHP exceptions (including SQL failures) are reported through a chained
+exception handler. PHP warnings and fatal errors are sent at request shutdown.
+Committed native SQL error logs, including caught SQL failures, are also sent at
+shutdown; a task retries up to 50 pending SQL logs each minute. Delivery receipts
+avoid replay across concurrent requests and preserve late-committing logs.
+An uncaught SQL exception with a matching committed native log is sent only via
+that log. Transactional exceptions are sent directly before core rolls back.
+
+Reports appear under **PHP** and **SQL** in the existing realtime error overview.
+Stack traces omit function arguments; SQL text/parameters and exception debuginfo
+are never transmitted. Common secrets, quoted literals and emails are redacted.
+Moodle's native `log_queries` table **does** store SQL text and parameters locally;
+its retention and cleanup remain the site administrator’s responsibility. Plugin delivery receipts store log IDs only.
+Native SQL logs contain no request URL or handled flag, so their reports use the
+site root and the context “Moodle SQL error log”.
+
+Coverage starts after Moodle configuration. Exceptions caught and consumed by
+application code are not visible to PHP's global exception handler; caught SQL
+failures are available only if their native logs survive transaction rollback.
+The standard Moodle AJAX dispatcher is also observed: its error response is
+forwarded unchanged, even when it catches the exception internally. AJAX reports
+include a stack trace only when Moodle includes one in the response; this feature
+does not enable debug output. Core error pages which invoke the default handler
+directly are observed during head rendering. Other custom replacement handlers
+(for example cron or third-party web-service handlers) must cooperate. PHP delivery is best-effort
+with a 1.5-second HTTP timeout; SQL delivery is retried while native logs remain.
+A hard process kill or out-of-memory failure may prevent shutdown reporting.
+
+The AJAX observer is restricted to core `lib/ajax/service.php` and
+`service-nologin.php`, buffers at most 1 MiB and sends at most 20 exceptions per
+response. Successful response data and request arguments are never transmitted.
+A caught SQL failure surfaced by AJAX may also produce a separate native SQL-log
+report, because core does not expose a correlation ID or (in production) a trace.

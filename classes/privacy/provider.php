@@ -35,15 +35,17 @@ use core_privacy\local\request\plugin\provider as request_provider;
 use core_privacy\local\request\userlist;
 
 /**
- * Declares the data this plugin causes a user's browser to send to GuardLMS.
+ * Declares data sent by the browser SDK and opt-in server error reporter to GuardLMS.
  *
- * The plugin stores no personal data in any Moodle table, which is why every
+ * The plugin stores only SQL delivery receipt IDs in its own table, which is why every
  * request method below is a no-op. It is nonetheless not a null_provider: with
  * real-time monitoring enabled it injects third-party JavaScript that makes a
  * logged-in user's browser transmit the page URL, the referrer, the user agent,
  * viewport and session identifiers and error stack traces to GuardLMS. Under
  * GDPR those are online identifiers plus behavioural data, so the transfer has
- * to be declared even though nothing is retained locally.
+ * to be declared even though this browser data is not retained locally.
+ * Server reporting also enables core log_queries (SQL text/parameters stay in
+ * Moodle); only redacted errors and argument-free stack traces are sent.
  *
  * What is deliberately NOT sent bounds that declaration: setUser() is never
  * called, so no name, email or user id leaves the site; interaction

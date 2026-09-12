@@ -15,22 +15,32 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Plugin version and metadata for local_guardlms.
- *
+ * Retry committed SQL errors when a request could not deliver them.
  * @package    local_guardlms
  * @copyright  2026 Luuk Verhoeven, ldesignmedia.nl <info@ldesignmedia.nl>
- * @author     Hamza Tamyachte
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+namespace local_guardlms\task;
 
-defined('MOODLE_INTERNAL') || die();
+/**
+ * Periodic fallback for request-shutdown SQL reporting.
+ */
+class flush_server_errors extends \core\task\scheduled_task {
+    /**
+     * Return the result.
+     *
+     * @return string Task name.
+     */
+    public function get_name(): string {
+        return get_string('task:flushservererrors', 'local_guardlms');
+    }
 
-$plugin->component = 'local_guardlms';
-$plugin->version = 2026091201;
-// Every feature, real-time monitoring included, supports Moodle 3.9 and later.
-// From 4.4 the head content is emitted through the Hooks API registration in
-// db/hooks.php; below it, through the legacy before_standard_html_head callback
-// in lib.php.
-$plugin->requires = 2020061500; // Moodle 3.9.
-$plugin->maturity = MATURITY_ALPHA;
-$plugin->release = '1.7.0';
+    /**
+     * Retry a bounded SQL batch when reporting is enabled.
+     */
+    public function execute(): void {
+        if (\local_guardlms\local\server_errors::enabled()) {
+            (new \local_guardlms\local\server_errors())->flush_sql_logs();
+        }
+    }
+}
