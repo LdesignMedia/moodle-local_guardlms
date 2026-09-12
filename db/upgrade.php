@@ -76,5 +76,14 @@ function xmldb_local_guardlms_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2026091201, 'local', 'guardlms');
     }
 
+    if ($oldversion < 2026091202) {
+        // The "Include Moodle configuration" toggle is gone: the configuration
+        // inventory is part of every push now. Drop the obsolete setting so it
+        // cannot linger in config_plugins as a stale "0".
+        unset_config('sendconfig', 'local_guardlms');
+
+        upgrade_plugin_savepoint(true, 2026091202, 'local', 'guardlms');
+    }
+
     return true;
 }

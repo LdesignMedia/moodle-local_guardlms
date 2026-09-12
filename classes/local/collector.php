@@ -157,13 +157,17 @@ class collector {
     /**
      * Build the full reporting payload.
      *
-     * @param bool $includeconfig When true, add the opt-in Moodle config section.
+     * The Moodle config section (config, securitychecks, security_config) is
+     * always included: it carries only audit settings, fixed check verdicts
+     * and aggregate counts, never secrets or user data (see CONFIG_KEYS,
+     * DERIVED_FLAGS and the security_report/hardening_report collectors).
+     *
      * @param bool $refreshupdates When true, allow an outbound refresh of Moodle's
      *                             update-check data before reporting it. Only cron
      *                             paths pass true; see update_check_state().
      * @return array Typed envelope ready to be JSON encoded.
      */
-    public static function build_payload(bool $includeconfig = false, bool $refreshupdates = false): array {
+    public static function build_payload(bool $refreshupdates = false): array {
         // Resolved first, and deliberately before moodle_info() asks
         // core_plugin_manager for the plugin list: a refresh calls
         // \core\update\checker::fetch(), which resets the plugin manager's
@@ -182,11 +186,9 @@ class collector {
             'database' => self::database_info(),
         ];
 
-        if ($includeconfig) {
-            $payload['config'] = self::config_info();
-            $payload['securitychecks'] = security_report::collect();
-            $payload['security_config'] = ['hardening' => hardening_report::collect()];
-        }
+        $payload['config'] = self::config_info();
+        $payload['securitychecks'] = security_report::collect();
+        $payload['security_config'] = ['hardening' => hardening_report::collect()];
 
         return $payload;
     }
@@ -617,7 +619,7 @@ class collector {
     }
 
     /**
-     * Selected Moodle configuration values (opt-in).
+     * Selected Moodle configuration values.
      *
      * @return array Keyed by setting name, value cast to string, missing settings omitted.
      */

@@ -356,13 +356,6 @@ if ($hassiteconfig) {
                 get_string('settings:enabled_desc', 'local_guardlms'),
                 1
             ));
-
-            $settings->add(new admin_setting_configcheckbox(
-                'local_guardlms/sendconfig',
-                get_string('settings:sendconfig', 'local_guardlms'),
-                get_string('settings:sendconfig_desc', 'local_guardlms'),
-                0
-            ));
         }
     }
 }
