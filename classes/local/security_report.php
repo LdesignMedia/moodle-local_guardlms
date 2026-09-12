@@ -31,34 +31,17 @@ namespace local_guardlms\local;
  *
  * The checks come from \core\check\manager (Moodle 3.9 and later), which is
  * also what the report page itself renders, so the verdicts are exactly the
- * ones an admin would see there, including checks contributed by plugins.
+ * ones an admin would see there, with only recognised check identifiers exported.
  *
  * @package    local_guardlms
  * @copyright  2026 Luuk Verhoeven, ldesignmedia.nl <info@ldesignmedia.nl>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class security_report {
-    /** @var int Longest summary reported per check. */
-    public const MAX_SUMMARY = 500;
-
-    /** @var int Longest details text reported per check. */
-    public const MAX_DETAILS = 2000;
-
-    /**
-     * @var string[] Core checks whose details list people rather than settings.
-     *
-     * riskadmin prints every administrator's name and email, riskxss every
-     * user holding an XSS-risk capability, riskbackup the roles that may
-     * back up user data. The verdict and summary carry the audit signal
-     * ("found 3 administrators"); the names are personal data the push has
-     * no business carrying, so details are withheld for these.
-     */
-    public const USER_LISTING_CHECKS = ['core_riskadmin', 'core_riskxss', 'core_riskbackup'];
-
     /**
      * Run every security check and describe its outcome.
      *
-     * A check that throws is reported as 'unknown' with the exception message
+     * A check that throws is reported as 'unknown' without exception text
      * rather than aborting the whole push: one broken check must not hide the
      * other verdicts.
      *
@@ -70,8 +53,16 @@ class security_report {
         }
 
         $checks = [];
-        foreach (\core\check\manager::get_checks('security') as $check) {
-            $checks[] = self::describe($check);
+        try {
+            $available = \core\check\manager::get_checks('security');
+        } catch (\Throwable $e) {
+            return [];
+        }
+        foreach ($available as $check) {
+            $entry = self::describe($check);
+            if ($entry) {
+                $checks[] = $entry;
+            }
         }
 
         return $checks;
@@ -84,55 +75,34 @@ class security_report {
      * @return array
      */
     protected static function describe(\core\check\check $check): array {
-        $entry = [
-            'ref' => $check->get_ref(),
-            'component' => $check->get_component(),
-            'name' => self::text((string) $check->get_name(), self::MAX_SUMMARY),
-            'status' => \core\check\result::UNKNOWN,
-            'summary' => '',
-            'details' => '',
+        $ref = $check->get_ref();
+        $names = [
+            'core_displayerrors' => 'Display errors', 'core_unsecuredataroot' => 'Data directory protection',
+            'core_publicpaths' => 'Public paths', 'core_configrw' => 'Configuration file permissions',
+            'core_preventexecpath' => 'Executable paths', 'core_embed' => 'Embedded content',
+            'core_openprofiles' => 'Public profiles', 'core_crawlers' => 'Search engine access',
+            'core_passwordpolicy' => 'Password policy', 'core_emailchangeconfirmation' => 'Email change confirmation',
+            'core_webcron' => 'Web cron access', 'core_cookiesecure' => 'Secure cookies',
+            'core_riskadmin' => 'Administrator privileges', 'core_riskxss' => 'Trusted content privileges',
+            'core_riskbackup' => 'Backup privileges', 'core_defaultuserrole' => 'Default authenticated user role',
+            'core_guestrole' => 'Guest role', 'core_frontpagerole' => 'Front page role',
+            'auth_none_noauth' => 'No authentication enabled',
         ];
-
+        // Unknown extensions may put personal information even in their ref or name.
+        if (!isset($names[$ref])) {
+            return [];
+        }
+        $entry = ['ref' => $ref, 'component' => $ref === 'auth_none_noauth' ? 'auth_none' : 'core',
+            'name' => $names[$ref], 'status' => 'unknown', 'summary' => '', 'details' => ''];
         try {
-            $result = $check->get_result();
-            $entry['status'] = $result->get_status();
-            $entry['summary'] = self::text($result->get_summary(), self::MAX_SUMMARY);
-            if (self::details_allowed($check)) {
-                $entry['details'] = self::text($result->get_details(), self::MAX_DETAILS);
+            $status = $check->get_result()->get_status();
+            if (in_array($status, ['ok', 'info', 'unknown', 'warning', 'error', 'critical', 'na'], true)) {
+                $entry['status'] = $status;
             }
         } catch (\Throwable $e) {
-            $entry['summary'] = self::text($e->getMessage(), self::MAX_SUMMARY);
+            // Never transmit exception messages, rendered summaries or details.
+            $entry['status'] = 'unknown';
         }
-
         return $entry;
-    }
-
-    /**
-     * Whether a check's details are known to describe settings, not people.
-     *
-     * Core checks are read one by one (see USER_LISTING_CHECKS). A check
-     * contributed by a plugin is unknown territory, so only its summary and
-     * verdict travel.
-     *
-     * @param \core\check\check $check The check.
-     * @return bool
-     */
-    public static function details_allowed(\core\check\check $check): bool {
-        return $check->get_component() === 'core'
-            && !in_array($check->get_ref(), self::USER_LISTING_CHECKS, true);
-    }
-
-    /**
-     * Reduce the report's HTML to plain, bounded text.
-     *
-     * @param string $html Text as the check rendered it.
-     * @param int $max Longest text to keep.
-     * @return string
-     */
-    protected static function text(string $html, int $max): string {
-        $text = html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $text = trim(preg_replace('/\s+/u', ' ', $text));
-
-        return \core_text::substr($text, 0, $max);
     }
 }

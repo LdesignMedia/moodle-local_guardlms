@@ -61,7 +61,7 @@ $string['settings:baseurl_desc'] = 'Base URL of your GuardLMS instance, for exam
 $string['settings:siteurloverride'] = 'Site URL override';
 $string['settings:siteurloverride_desc'] = 'Optional. The site URL registered with GuardLMS and sent on every push. Leave empty to use this site\'s address ({$a}). Set an explicit value only if GuardLMS rejects pushes with a "siteurl does not match" error, for example on cloned, staging or reverse-proxied sites where the reported address differs from the one registered when you connected. Reconnect after changing this so the push key is reissued for the new URL.';
 $string['settings:sendconfig'] = 'Include Moodle configuration';
-$string['settings:sendconfig_desc'] = 'Optional. Also send the site security, HTTP security, session, authentication, web service and debugging settings, plus the results of the Moodle security report, so GuardLMS can audit how the site is configured. Secrets such as the cron password or reCAPTCHA keys are never sent, only whether they are set. Off by default.';
+$string['settings:sendconfig_desc'] = 'Optional. Also send the site security, HTTP security, session, authentication, web service and debugging settings, plus fixed verdicts from recognised Moodle security checks and aggregate hardening observations, so GuardLMS can audit how the site is configured. No user records, token values, enrolment keys, internal host lists, absolute paths or report prose are sent by this configuration inventory. Secret settings are represented only by whether they are set. Off by default.';
 
 // Real-time monitoring settings.
 $string['settings:realtimeheading'] = 'Real-time monitoring';
