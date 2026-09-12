@@ -40,7 +40,7 @@ final class hardening_report_test extends \advanced_testcase {
             set_config($key, $secret);
         }
         set_config('pathtoclam', $secret, 'antivirus_clamav');
-        $payload = collector::build_payload(true);
+        $payload = collector::build_payload();
         $this->assertStringNotContainsString($secret, json_encode($payload));
         foreach ($payload['securitychecks'] as $check) {
             $this->assertSame('', $check['summary']);

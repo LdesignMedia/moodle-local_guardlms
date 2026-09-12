@@ -42,7 +42,7 @@ final class upgrade_test extends \advanced_testcase {
     private const NEW_VERSION = 2026072800;
 
     /** @var int The last savepoint in db/upgrade.php — where a full run from OLD_VERSION lands. */
-    private const LATEST_VERSION = 2026091201;
+    private const LATEST_VERSION = 2026091202;
 
     /**
      * Pretend the site is still on the previous release.
@@ -142,6 +142,20 @@ final class upgrade_test extends \advanced_testcase {
 
         $this->assertSame('1', get_config('local_guardlms', 'sdkenabled'), 'A re-run must not reset the admin choice.');
         $this->assertSame(1, $this->queued_refresh_tasks(), 'A re-run must not queue a second refresh.');
+    }
+
+    /**
+     * The removed "Include Moodle configuration" toggle is cleaned up on upgrade.
+     */
+    public function test_upgrade_drops_the_obsolete_sendconfig_setting(): void {
+        $this->resetAfterTest();
+        $this->pretend_old_version();
+
+        set_config('sendconfig', '0', 'local_guardlms');
+
+        $this->assertTrue(xmldb_local_guardlms_upgrade(self::OLD_VERSION));
+
+        $this->assertFalse(get_config('local_guardlms', 'sendconfig'));
     }
 
     /**

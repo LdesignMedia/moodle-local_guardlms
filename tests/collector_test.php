@@ -230,7 +230,7 @@ final class collector_test extends \advanced_testcase {
     }
 
     /**
-     * The opt-in configuration section covers the audit settings and never a secret.
+     * The configuration section covers the audit settings and never a secret.
      */
     public function test_config_section_reports_audit_settings_without_secrets(): void {
         $this->resetAfterTest();
@@ -240,7 +240,7 @@ final class collector_test extends \advanced_testcase {
         set_config('cronremotepassword', 'top-secret');
         set_config('allowedip', '');
 
-        $payload = collector::build_payload(true);
+        $payload = collector::build_payload();
 
         $config = $payload['config'];
         $this->assertSame('1', $config['debugdisplay']);
@@ -267,16 +267,16 @@ final class collector_test extends \advanced_testcase {
     }
 
     /**
-     * Without the opt-in neither the settings nor the security report leave the site.
+     * The configuration section is part of every payload; there is no opt-in.
      */
-    public function test_config_and_security_checks_are_absent_without_the_opt_in(): void {
+    public function test_config_and_security_checks_are_always_present(): void {
         $this->resetAfterTest();
 
-        $payload = collector::build_payload(false);
+        $payload = collector::build_payload();
 
-        $this->assertArrayNotHasKey('config', $payload);
-        $this->assertArrayNotHasKey('security_config', $payload);
-        $this->assertArrayNotHasKey('securitychecks', $payload);
+        $this->assertArrayHasKey('config', $payload);
+        $this->assertArrayHasKey('security_config', $payload);
+        $this->assertArrayHasKey('securitychecks', $payload);
     }
 
     /**
@@ -285,7 +285,7 @@ final class collector_test extends \advanced_testcase {
     public function test_security_checks_mirror_the_security_report(): void {
         $this->resetAfterTest();
 
-        $payload = collector::build_payload(true);
+        $payload = collector::build_payload();
         $checks = $payload['securitychecks'];
 
         $expected = array_map(function ($check) {
@@ -317,7 +317,7 @@ final class collector_test extends \advanced_testcase {
         $this->resetAfterTest();
 
         $admin = get_admin();
-        $payload = collector::build_payload(true);
+        $payload = collector::build_payload();
         $byref = array_column($payload['securitychecks'], null, 'ref');
 
         $this->assertSame('', $byref['core_riskadmin']['details']);

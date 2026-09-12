@@ -431,7 +431,7 @@ final class sdk_config_test extends \advanced_testcase {
         require($CFG->dirroot . '/local/guardlms/version.php');
 
         $this->assertSame($plugin->release, sdk_config::PLUGIN_RELEASE);
-        $this->assertSame(2026091201, $plugin->version);
+        $this->assertSame(2026091202, $plugin->version);
         $this->assertSame(
             2020061500,
             $plugin->requires,

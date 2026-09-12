@@ -52,8 +52,7 @@ class pusher {
         // site that never touched the advanced settings still pushes to GuardLMS.
         $endpoint = config::pushendpoint();
 
-        $includeconfig = (bool) get_config('local_guardlms', 'sendconfig');
-        $payload = collector::build_payload($includeconfig, $refreshupdates);
+        $payload = collector::build_payload($refreshupdates);
 
         require_once($CFG->libdir . '/filelib.php');
 

@@ -35,7 +35,7 @@ A free GuardLMS account is enough to get started.
   user IDs are sent, and clicks and form entries are never recorded.
 - **Optional page analytics.** On plans that include analytics, the same script
   can also send anonymous page views and scroll depth.
-- **Optional configuration review.** Off by default. When enabled, a fixed list
+- **Configuration review.** A fixed list
   of security and session settings (cookie flags, session timeout, password
   policy, lockout threshold, self registration, and similar) is included so
   GuardLMS can review how the site is hardened. Secrets are never sent.
@@ -57,8 +57,8 @@ The plugin is the sensor. GuardLMS is where the data becomes useful.
 - **Environment intelligence.** PHP version, extensions, operating system,
   webserver and session store are tracked over time and matched against known
   vulnerabilities alongside the Moodle inventory.
-- **Configuration review.** With the optional configuration section enabled,
-  GuardLMS checks the reported settings against hardening best practices.
+- **Configuration review.** GuardLMS checks the reported settings against
+  hardening best practices.
 - **JavaScript error tracking.** Grouped errors with full stack traces,
   breadcrumbs of preceding navigation, network requests and console output,
   browser and device context, and rate limiting so a broken page does not
@@ -178,18 +178,18 @@ endpoint, authenticated with the site's push key:
   webserver name and version, and the session handler in use
 - `php`: PHP version, SAPI, memory limit, max execution time,
   upload and post size limits, timezone and the loaded extensions
-- `config` (optional, off by default): the settings an auditor reads under
+- `config`: the settings an auditor reads under
   Site administration > Security (site security, HTTP security,
   notifications), plus session, authentication, web service, debugging and
   update settings. The full key list is `collector::CONFIG_KEYS`. Secrets are
   never sent: the cron password, reCAPTCHA keys, IP allow/block lists and
   site policy are reported only as set/not-set flags (`cronremotepasswordset`,
   `recaptchaconfigured`, `allowedipset`, `blockedipset`, `sitepolicyset`)
-- `securitychecks` (sent together with `config`): recognised checks from Site
+- `securitychecks`: recognised checks from Site
   administration > Reports > Security, with fixed `ref`, `component`, `name`
   and `status` (`ok`, `info`, `warning`, `error`, `critical`, `na` or `unknown`).
   `summary` and `details` are always empty; unknown plugin checks are withheld.
-- `security_config.hardening` (sent together with `config`): versioned aggregate
+- `security_config.hardening`: versioned aggregate
   observations; see Private hardening inventory below.
 
 Plugin versions are reported with the raw values exactly as Moodle records them,
@@ -323,9 +323,9 @@ by URL:
 /admin/settings.php?section=local_guardlms&mode=advanced
 ```
 
-That page exposes the GuardLMS base URL, the push path, the daily-push toggle,
-an optional site URL override (for sites GuardLMS knows under a different
-address), and the "Include Moodle configuration" toggle. The push key, the
+That page exposes the GuardLMS base URL, the push path, the daily-push toggle
+and an optional site URL override (for sites GuardLMS knows under a different
+address). The push key, the
 monitoring key and the verification token are never editable: the connect flow
 writes them.
 
@@ -377,7 +377,7 @@ GNU GPL v3 or later. See the [LICENSE](LICENSE) file for the full license text.
 
 ### Private hardening inventory (1.7.0)
 
-With **Include Moodle configuration** enabled, the inventory includes a versioned
+The inventory includes a versioned
 `security_config.hardening` block. It reports fixed booleans and aggregate counts:
 web plugin installation policy, token expiry/restrictions, guest/self enrolment
 instances, scheduled/ad hoc task retries, MFA configuration and ClamAV configuration.
@@ -407,7 +407,7 @@ telemetry and errors); disable it if that transfer is not appropriate.
 
 ### Offline SSRF policy and filesystem checks
 
-The opt-in hardening block now includes `ssrf` and `filesystem`. Configured cURL
+The hardening block now includes `ssrf` and `filesystem`. Configured cURL
 IP addresses and CIDRs may be forwarded (up to 200); other rule formats and
 hostnames are omitted from exported evidence and counted. Moodle's own IP-rule
 parser checks fixed metadata, loopback, private IPv4 and local IPv6 samples.
