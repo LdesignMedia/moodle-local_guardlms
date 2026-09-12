@@ -34,7 +34,7 @@ class hardening_report {
      */
     public static function collect(): array {
         $result = ['version' => 1];
-        foreach (['deployment', 'tokens', 'enrolments', 'tasks', 'mfa', 'antivirus'] as $section) {
+        foreach (['deployment', 'tokens', 'enrolments', 'tasks', 'mfa', 'antivirus', 'ssrf', 'filesystem'] as $section) {
             try {
                 $metrics = self::$section();
                 $result[$section] = ['status' => $metrics === null ? 'unsupported' : 'observed',
@@ -173,6 +173,66 @@ class hardening_report {
         $failure = get_config('antivirus_clamav', 'clamfailureonupload');
         if (in_array($failure, ['donothing', 'actlikevirus', 'tryagain'], true)) {
             $result['fail_open'] = $failure === 'donothing';
+        }
+        return $result;
+    }
+
+    /**
+     * Offline address-policy checks; never request cloud metadata or resolve hostnames.
+     *
+     * @return array|null
+     */
+    private static function ssrf(): ?array {
+        if (!class_exists(\core\files\curl_security_helper::class)) {
+            return null;
+        }
+        return (new outbound_policy_report())->inspect();
+    }
+
+    /**
+     * Inspect the current process permissions; cron is not evidence of web-user permissions.
+     *
+     * @return array
+     */
+    private static function filesystem(): array {
+        global $CFG;
+        return self::inspect_filesystem($CFG->dirroot, $CFG->root ?? $CFG->dirroot, $CFG->dataroot);
+    }
+
+    /**
+     * Read filesystem metadata only. No test files, contents, usernames or absolute paths are exported.
+     *
+     * @param string $webroot Moodle's public code directory.
+     * @param string $coderoot Moodle's installation directory (different in Moodle 5.1+).
+     * @param string $dataroot Moodle's data directory.
+     * @return array
+     */
+    public static function inspect_filesystem(string $webroot, string $coderoot, string $dataroot): array {
+        $result = ['runtime' => PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg' ? 'cli' : 'web'];
+        $webroot = realpath($webroot);
+        $coderoot = realpath($coderoot);
+        $dataroot = realpath($dataroot);
+        if ($webroot !== false) {
+            clearstatcache(true, $webroot);
+            $result['webroot_writable'] = is_writable($webroot);
+            if ($dataroot !== false) {
+                $result['dataroot_in_webroot'] = $dataroot === $webroot
+                    || strpos($dataroot, $webroot . DIRECTORY_SEPARATOR) === 0;
+            }
+        }
+        $paths = [];
+        foreach (array_unique(array_filter([$webroot, $coderoot])) as $root) {
+            foreach (['config.php', 'index.php', 'version.php', 'lib/setup.php'] as $name) {
+                $path = $root . DIRECTORY_SEPARATOR . $name;
+                if (is_file($path)) {
+                    clearstatcache(true, $path);
+                    $paths[$path] = is_writable($path);
+                }
+            }
+        }
+        if ($paths) {
+            $result['checked_code_files'] = count($paths);
+            $result['writable_code_files'] = count(array_filter($paths));
         }
         return $result;
     }

@@ -385,7 +385,7 @@ Every section has an observation time and `observed`, `unsupported` or `failed`
 status. An unavailable observation contains no metrics; it is never a zero/pass.
 
 No user names, emails, user IDs, token values, enrolment keys, course names,
-IP restriction lists, antivirus connection addresses, absolute filesystem paths,
+Per-user IP restriction lists, antivirus connection addresses, absolute filesystem paths,
 SQL or exception text are included in these observations. Native security checks
 export only allowlisted identifiers, fixed labels and verdicts. Their rendered
 summaries/details and unrecognised third-party checks remain local. Inventory
@@ -403,3 +403,22 @@ these are scheduled snapshots, not realtime monitoring.
 This contract covers the server-side inventory. Optional browser monitoring is
 a separate feature with its own privacy declaration (page URLs, browser/session
 telemetry and errors); disable it if that transfer is not appropriate.
+
+
+### Offline SSRF policy and filesystem checks
+
+The opt-in hardening block now includes `ssrf` and `filesystem`. Configured cURL
+IP addresses and CIDRs may be forwarded (up to 200); other rule formats and
+hostnames are omitted from exported evidence and counted. Moodle's own IP-rule
+parser checks fixed metadata, loopback, private IPv4 and local IPv6 samples.
+This detects gaps in nonempty lists without performing HTTP requests, DNS
+lookups, metadata reads or exploitation. Passing samples do not establish full
+subnet coverage or protection against redirects/DNS rebinding. URL downloader
+state and broad port allowances provide context.
+
+Filesystem checks inspect effective permissions of the collecting PHP process,
+including the public directory and sampled code/config files, and whether
+moodledata is inside the public directory. CLI and web contexts are separate;
+cron results do not establish web-user permissions. The checks do not create
+files or export absolute paths, owners or file contents. The receiver must
+support these new sections before this connector is deployed.

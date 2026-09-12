@@ -188,4 +188,59 @@ final class hardening_report_test extends \advanced_testcase {
         set_config('enrol_plugins_enabled', 'manual');
         $this->assertSame(0, hardening_report::collect()['enrolments']['guest_without_key']);
     }
+
+    /**
+     * A nonempty but incomplete blocklist must not imply metadata protection.
+     */
+    public function test_ssrf_policy_samples_and_permitted_ip_evidence(): void {
+        $this->resetAfterTest();
+        set_config('curlsecurityblockedhosts', "127.0.0.0/8\nprivate-name.example.invalid\nsecret=value");
+        set_config('curlsecurityallowedport', "80\n443");
+        $report = hardening_report::collect()['ssrf'];
+        $this->assertSame('observed', $report['status']);
+        $this->assertFalse($report['metadata_ip_blocked']);
+        $this->assertSame(['127.0.0.0/8'], $report['blocked_ip_rules']);
+        $this->assertSame(2, $report['omitted_rule_count']);
+        $this->assertFalse($report['non_http_ports_allowed']);
+        $this->assertStringNotContainsString('private-name', json_encode($report));
+        $this->assertStringNotContainsString('secret=', json_encode($report));
+        set_config('curlsecurityblockedhosts', "127.0.0.0/8\n169.254.0.0/16\n10.0.0.0/8\n172.16.0.0/12"
+            . "\n192.168.0.0/16\n::1\nfc00::/7\nfe80::/10");
+        $report = hardening_report::collect()['ssrf'];
+        foreach (
+            ['metadata_ip_blocked', 'loopback_samples_blocked', 'private_samples_blocked',
+                'ipv6_local_samples_blocked'] as $key
+        ) {
+            $this->assertTrue($report[$key], $key);
+        }
+        set_config('curlsecurityallowedport', "080\n0443");
+        $this->assertFalse(hardening_report::collect()['ssrf']['non_http_ports_allowed']);
+        set_config('curlsecurityallowedport', 'invalid-port');
+        $this->assertArrayNotHasKey('non_http_ports_allowed', hardening_report::collect()['ssrf']);
+        set_config('curlsecurityallowedport', '');
+        $this->assertTrue(hardening_report::collect()['ssrf']['non_http_ports_allowed']);
+    }
+
+    /**
+     * Inspect writable code/data placement without exporting local paths or file contents.
+     */
+    public function test_filesystem_reports_context_and_handles_missing_paths(): void {
+        $this->resetAfterTest();
+        $root = make_request_directory();
+        mkdir($root . '/public');
+        mkdir($root . '/public/data');
+        file_put_contents($root . '/config.php', 'private fixture contents');
+        $report = hardening_report::inspect_filesystem($root . '/public', $root, $root . '/public/data');
+        $this->assertSame('cli', $report['runtime']);
+        $this->assertTrue($report['webroot_writable']);
+        $this->assertTrue($report['dataroot_in_webroot']);
+        $this->assertSame(1, $report['writable_code_files']);
+        $this->assertStringNotContainsString($root, json_encode($report));
+        mkdir($root . '/public-other');
+        $report = hardening_report::inspect_filesystem($root . '/public', $root, $root . '/public-other');
+        $this->assertFalse($report['dataroot_in_webroot']);
+        $report = hardening_report::inspect_filesystem($root . '/missing', $root . '/missing', $root . '/missing');
+        $this->assertArrayNotHasKey('webroot_writable', $report);
+        $this->assertArrayNotHasKey('writable_code_files', $report);
+    }
 }
