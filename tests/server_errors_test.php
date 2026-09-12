@@ -36,6 +36,11 @@ final class server_errors_test extends \advanced_testcase {
     protected function setUp(): void {
         parent::setUp();
         $this->resetAfterTest();
+        // On PostgreSQL and MSSQL core wraps every test in a delegated transaction and
+        // resets by rollback. The importer skips open transactions, and a failed query
+        // aborts the whole PostgreSQL transaction so core cannot write to log_queries.
+        // Commit that wrapper so these tests exercise the real, non-transactional path.
+        $this->preventResetByRollback();
         global $DB;
         $property = new \ReflectionProperty(\moodle_database::class, 'dboptions');
         $property->setAccessible(true);
