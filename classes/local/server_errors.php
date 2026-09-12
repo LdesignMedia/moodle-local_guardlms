@@ -328,6 +328,7 @@ class server_errors {
      * @return bool Whether the previous handler handled the error.
      */
     public function handle_error(int $severity, string $message, string $file, int $line): bool {
+        $arguments = func_get_args();
         if (!$this->busy && (error_reporting() & $severity) && count($this->pending) < 20) {
             $this->busy = true;
             try {
@@ -343,7 +344,7 @@ class server_errors {
             }
         }
         return is_callable($this->errorhandler)
-            ? (bool) call_user_func_array($this->errorhandler, func_get_args())
+            ? (bool) call_user_func_array($this->errorhandler, $arguments)
             : false;
     }
 
