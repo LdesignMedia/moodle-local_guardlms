@@ -171,12 +171,12 @@ endpoint, authenticated with the site's push key:
 
 - `moodle`: release, version number, branch, every installed plugin as its
   frankenstyle component name, version, release, display name, standard/third
-  party flag, enabled state, absolute filesystem path and URL path below the
+  party flag, enabled state, public URL path below the
   site root (for example `/mod/quiz`), plus the updates Moodle itself reports
   as available for each of them
-- `server`: operating system family, distribution and release, hostname,
-  Moodle code root, webserver name and version, and the session handler in use
-- `php`: PHP version, SAPI, loaded `php.ini`, memory limit, max execution time,
+- `server`: operating system family, distribution and release,
+  webserver name and version, and the session handler in use
+- `php`: PHP version, SAPI, memory limit, max execution time,
   upload and post size limits, timezone and the loaded extensions
 - `config` (optional, off by default): the settings an auditor reads under
   Site administration > Security (site security, HTTP security,
@@ -185,13 +185,12 @@ endpoint, authenticated with the site's push key:
   never sent: the cron password, reCAPTCHA keys, IP allow/block lists and
   site policy are reported only as set/not-set flags (`cronremotepasswordset`,
   `recaptchaconfigured`, `allowedipset`, `blockedipset`, `sitepolicyset`)
-- `securitychecks` (sent together with `config`): every check from Site
-  administration > Reports > Security, as the report itself runs them, with
-  `ref`, `component`, `name`, `status` (`ok`, `info`, `warning`, `error`,
-  `critical`, `na` or `unknown`), `summary` and `details` as plain text.
-  Details are withheld for the checks that list people (administrators,
-  users with XSS-risk capabilities, backup roles) and for checks contributed
-  by plugins, so no name or email address travels with the report
+- `securitychecks` (sent together with `config`): recognised checks from Site
+  administration > Reports > Security, with fixed `ref`, `component`, `name`
+  and `status` (`ok`, `info`, `warning`, `error`, `critical`, `na` or `unknown`).
+  `summary` and `details` are always empty; unknown plugin checks are withheld.
+- `security_config.hardening` (sent together with `config`): versioned aggregate
+  observations; see Private hardening inventory below.
 
 Plugin versions are reported with the raw values exactly as Moodle records them,
 because GuardLMS matches CVEs on the component name and version.
@@ -245,7 +244,6 @@ a request to download.moodle.org.
         "displayname": "Quiz",
         "isstandard": true,
         "enabled": 1,
-        "path": "/var/www/html/mod/quiz",
         "relativepath": "/mod/quiz",
         "updates": []
       },
@@ -259,7 +257,6 @@ a request to download.moodle.org.
         "displayname": "GuardLMS",
         "isstandard": false,
         "enabled": -1,
-        "path": "/var/www/html/local/guardlms",
         "relativepath": "/local/guardlms",
         "updates": [
           {
@@ -282,14 +279,11 @@ a request to download.moodle.org.
   "server": {
     "os_family": "Linux",
     "os": "Linux",
-    "hostname": "web01",
-    "dirroot": "/var/www/html",
     "webserver": "Apache/2.4.58"
   },
   "php": {
     "version": "8.2.0",
     "sapi": "fpm-fcgi",
-    "ini": "/etc/php/8.2/fpm/php.ini",
     "memory_limit": "512M",
     "max_execution_time": "30",
     "upload_max_filesize": "100M",
@@ -311,8 +305,8 @@ a request to download.moodle.org.
       "component": "core",
       "name": "Password policy",
       "status": "ok",
-      "summary": "Password policy is enabled.",
-      "details": "..."
+      "summary": "",
+      "details": ""
     }
   ]
 }
@@ -380,6 +374,54 @@ moodle-plugin-ci phplint && moodle-plugin-ci phpcs --max-warnings 0 && moodle-pl
 ## License
 
 GNU GPL v3 or later. See the [LICENSE](LICENSE) file for the full license text.
+
+### Private hardening inventory (1.7.0)
+
+With **Include Moodle configuration** enabled, the inventory includes a versioned
+`security_config.hardening` block. It reports fixed booleans and aggregate counts:
+web plugin installation policy, token expiry/restrictions, guest/self enrolment
+instances, scheduled/ad hoc task retries, MFA configuration and ClamAV configuration.
+Every section has an observation time and `observed`, `unsupported` or `failed`
+status. An unavailable observation contains no metrics; it is never a zero/pass.
+
+No user names, emails, user IDs, token values, enrolment keys, course names,
+Per-user IP restriction lists, antivirus connection addresses, absolute filesystem paths,
+SQL or exception text are included in these observations. Native security checks
+export only allowlisted identifiers, fixed labels and verdicts. Their rendered
+summaries/details and unrecognised third-party checks remain local. Inventory
+also omits server hostname, code root, plugin absolute paths and PHP ini path.
+The site URL and public component-relative URL paths remain necessary inventory
+identifiers. Login-notification recipients and internal cURL host lists are
+reduced to presence flags.
+
+The observations describe configuration, not proof of exploitation or end-to-end
+protection. MFA at an external identity provider, antivirus operation, external
+backups and restore success are not established. A stopped push task cannot
+report its own outage. GuardLMS must consider the last accepted push separately;
+these are scheduled snapshots, not realtime monitoring.
+
+This contract covers the server-side inventory. Optional browser monitoring is
+a separate feature with its own privacy declaration (page URLs, browser/session
+telemetry and errors); disable it if that transfer is not appropriate.
+
+
+### Offline SSRF policy and filesystem checks
+
+The opt-in hardening block now includes `ssrf` and `filesystem`. Configured cURL
+IP addresses and CIDRs may be forwarded (up to 200); other rule formats and
+hostnames are omitted from exported evidence and counted. Moodle's own IP-rule
+parser checks fixed metadata, loopback, private IPv4 and local IPv6 samples.
+This detects gaps in nonempty lists without performing HTTP requests, DNS
+lookups, metadata reads or exploitation. Passing samples do not establish full
+subnet coverage or protection against redirects/DNS rebinding. URL downloader
+state and broad port allowances provide context.
+
+Filesystem checks inspect effective permissions of the collecting PHP process,
+including the public directory and sampled code/config files, and whether
+moodledata is inside the public directory. CLI and web contexts are separate;
+cron results do not establish web-user permissions. The checks do not create
+files or export absolute paths, owners or file contents. The receiver must
+support these new sections before this connector is deployed.
 
 ## Server errors (opt-in)
 

@@ -63,7 +63,7 @@ function xmldb_local_guardlms_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2026082100, 'local', 'guardlms');
     }
 
-    if ($oldversion < 2026091200) {
+    if ($oldversion < 2026091201) {
         global $DB;
         $table = new xmldb_table('local_guardlms_sql_sent');
         $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
@@ -73,7 +73,7 @@ function xmldb_local_guardlms_upgrade(int $oldversion): bool {
         if (!$DB->get_manager()->table_exists($table)) {
             $DB->get_manager()->create_table($table);
         }
-        upgrade_plugin_savepoint(true, 2026091200, 'local', 'guardlms');
+        upgrade_plugin_savepoint(true, 2026091201, 'local', 'guardlms');
     }
 
     return true;

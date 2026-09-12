@@ -42,7 +42,7 @@ final class upgrade_test extends \advanced_testcase {
     private const NEW_VERSION = 2026072800;
 
     /** @var int The last savepoint in db/upgrade.php — where a full run from OLD_VERSION lands. */
-    private const LATEST_VERSION = 2026091200;
+    private const LATEST_VERSION = 2026091201;
 
     /**
      * Pretend the site is still on the previous release.

@@ -96,8 +96,6 @@ class collector {
         'cookiehttponly',
         'cookiesamesite',
         'allowframembedding',
-        'curlsecurityblockedhosts',
-        'curlsecurityallowedport',
         'referrerpolicy',
         'slasharguments',
         // Notifications.
@@ -153,6 +151,7 @@ class collector {
         'allowedipset' => ['allowedip'],
         'blockedipset' => ['blockedip'],
         'sitepolicyset' => ['sitepolicy'],
+        'curlsecurityblockedhostsset' => ['curlsecurityblockedhosts'],
     ];
 
     /**
@@ -186,6 +185,7 @@ class collector {
         if ($includeconfig) {
             $payload['config'] = self::config_info();
             $payload['securitychecks'] = security_report::collect();
+            $payload['security_config'] = ['hardening' => hardening_report::collect()];
         }
 
         return $payload;
@@ -231,11 +231,7 @@ class collector {
                     'displayname' => (string) $info->displayname,
                     'isstandard' => (bool) $info->is_standard(),
                     'enabled' => self::enabled_state($info),
-                    // Where the code lives, so GuardLMS can target the plugin
-                    // directly: 'path' on the filesystem, 'relativepath' as
-                    // the URL path below the site root (/mod/quiz), which is
-                    // what an external scan needs to probe a plugin's files.
-                    'path' => self::plugin_path($info),
+                    // Public URL path for component checks; never the absolute filesystem path.
                     'relativepath' => self::plugin_relative_path($info),
                 ];
 
@@ -319,8 +315,8 @@ class collector {
             } catch (\Throwable $e) {
                 // A site behind an egress firewall must still push its
                 // inventory; it just pushes it without update information, and
-                // says why.
-                $fetcherror = \core_text::substr($e->getMessage(), 0, 500);
+                // reports a fixed failure code without exception text.
+                $fetcherror = 'update_fetch_failed';
             }
         }
 
@@ -438,14 +434,11 @@ class collector {
 
         [$webservername, $webserverversion] = self::split_server_signature((string) $webserver);
 
-        // os_family, os and webserver stay as they were: an older GuardLMS keeps
+        // Os_family, os and webserver stay as they were: an older GuardLMS keeps
         // reading them while the split fields below are what CVE matching needs.
         return array_merge([
             'os_family' => PHP_OS_FAMILY,
             'os' => PHP_OS,
-            'hostname' => gethostname() ?: null,
-            // The Moodle code root every plugin 'path' sits under.
-            'dirroot' => (string) $CFG->dirroot,
             'webserver' => $webserver ?: null,
             'webserver_name' => $webservername,
             'webserver_version' => $webserverversion,
@@ -483,7 +476,7 @@ class collector {
             $info['os_version'] = $release['VERSION_ID'] ?? '';
             $info['os_pretty'] = $release['PRETTY_NAME'] ?? '';
         } else if (PHP_OS_FAMILY === 'Darwin') {
-            // macOS has no os-release file; the Darwin kernel version is the only
+            // Apple macOS has no os-release file; the Darwin kernel version is the only
             // version PHP exposes without shelling out to sw_vers.
             $info['os_name'] = 'macOS';
             $info['os_id'] = 'macos';
@@ -614,7 +607,6 @@ class collector {
         return [
             'version' => PHP_VERSION,
             'sapi' => php_sapi_name(),
-            'ini' => php_ini_loaded_file() ?: 'none',
             'memory_limit' => ini_get('memory_limit'),
             'max_execution_time' => ini_get('max_execution_time'),
             'upload_max_filesize' => ini_get('upload_max_filesize'),
@@ -639,7 +631,9 @@ class collector {
             if ($value === false) {
                 continue;
             }
-            $config[$key] = (string) $value;
+            // This setting may contain recipient user IDs; only presence is needed.
+            $config[$key] = $key === 'notifyloginfailures'
+                ? (empty($value) ? '' : 'configured') : (string) $value;
         }
 
         foreach (self::DERIVED_FLAGS as $flag => $sources) {
