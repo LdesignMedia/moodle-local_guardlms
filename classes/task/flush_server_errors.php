@@ -15,23 +15,32 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Hook callback registrations for local_guardlms (Moodle 4.4+).
- *
+ * Retry committed SQL errors when a request could not deliver them.
  * @package    local_guardlms
  * @copyright  2026 Luuk Verhoeven, ldesignmedia.nl <info@ldesignmedia.nl>
- * @author     Hamza Tamyachte
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+namespace local_guardlms\task;
 
-defined('MOODLE_INTERNAL') || die();
+/**
+ * Periodic fallback for request-shutdown SQL reporting.
+ */
+class flush_server_errors extends \core\task\scheduled_task {
+    /**
+     * Return the result.
+     *
+     * @return string Task name.
+     */
+    public function get_name(): string {
+        return get_string('task:flushservererrors', 'local_guardlms');
+    }
 
-$callbacks = [
-    [
-        'hook' => \core\hook\after_config::class,
-        'callback' => [\local_guardlms\hook_callbacks::class, 'after_config'],
-    ],
-    [
-        'hook' => \core\hook\output\before_standard_head_html_generation::class,
-        'callback' => [\local_guardlms\hook_callbacks::class, 'before_standard_head_html_generation'],
-    ],
-];
+    /**
+     * Retry a bounded SQL batch when reporting is enabled.
+     */
+    public function execute(): void {
+        if (\local_guardlms\local\server_errors::enabled()) {
+            (new \local_guardlms\local\server_errors())->flush_sql_logs();
+        }
+    }
+}

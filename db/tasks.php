@@ -27,6 +27,15 @@ defined('MOODLE_INTERNAL') || die();
 
 $tasks = [
     [
+        'classname' => 'local_guardlms\\task\\flush_server_errors',
+        'blocking' => 0,
+        'minute' => '*',
+        'hour' => '*',
+        'day' => '*',
+        'dayofweek' => '*',
+        'month' => '*',
+    ],
+    [
         'classname' => 'local_guardlms\task\push_site_info',
         'blocking' => 0,
         'minute' => 'R',

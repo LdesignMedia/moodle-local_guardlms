@@ -102,12 +102,16 @@ $string['error:connectrejected'] = 'GuardLMS rejected the connection: {$a}';
 $string['error:sdkrefreshfailed'] = 'Could not refresh the real-time monitoring settings: {$a}';
 
 // Privacy.
-$string['privacy:metadata:guardlms'] = 'With real-time monitoring enabled, this plugin loads GuardLMS JavaScript that reports browser errors from this site to GuardLMS. If page analytics is also enabled, it reports a record of every page view as well, not only pages where an error happened. No name, email address or user ID is ever sent, and clicks and form entries are never recorded.';
+$string['privacy:metadata:guardlms'] = 'With the separate server-error opt-in enabled, redacted PHP/SQL errors and stack traces are also sent to GuardLMS. Native SQL text and parameters remain in Moodle. With real-time monitoring enabled, this plugin loads GuardLMS JavaScript that reports browser errors from this site to GuardLMS. If page analytics is also enabled, it reports a record of every page view as well, not only pages where an error happened. The plugin does not attach Moodle user identities to reports, and clicks and form entries are never recorded.';
 $string['privacy:metadata:guardlms:pageurl'] = 'The address of the page the error happened on. Session keys and similar tokens are removed before it is sent.';
 $string['privacy:metadata:guardlms:referrerurl'] = 'The address of the page that linked to the page the error happened on.';
 $string['privacy:metadata:guardlms:useragent'] = 'The browser and operating system reported by the browser, plus the window size.';
 $string['privacy:metadata:guardlms:sessionid'] = 'An anonymous identifier that groups errors from one browsing session together. It is not the Moodle user ID and cannot be traced back to an account by GuardLMS.';
-$string['privacy:metadata:guardlms:errordetails'] = 'The error message, the script and line it came from, the stack trace, and a short trail of preceding page loads, network requests and console messages.';
+$string['privacy:metadata:guardlms:errordetails'] = 'Browser errors and, with server reporting enabled, PHP and SQL error messages, exception classes, file paths, line numbers and stack traces. Server traces exclude arguments and SQL parameters; common secrets and quoted literals are redacted.';
 $string['privacy:metadata:guardlms:pageviews'] = 'Only when page analytics is enabled: a record of each page visited, sent on every page view rather than only when something goes wrong.';
 $string['privacy:metadata:guardlms:scrolldepth'] = 'Only when page analytics is enabled: how far down each page was scrolled.';
 $string['privacy:metadata:guardlms:ipaddress'] = 'The IP address the report is sent from. The plugin does not include it in the report, but the receiving server sees it as part of the connection.';
+
+$string['settings:servererrorsenabled'] = 'Report PHP and SQL errors';
+$string['settings:servererrorsenabled_desc'] = 'Send PHP exceptions, SQL errors and available stack traces to the GuardLMS real-time overview. Requires a connected site with active monitoring. Off by default; save this checkbox to start or stop reporting. Error text is redacted before sending. Moodle keeps its native SQL log locally, including SQL text and parameters; these are not sent to GuardLMS.';
+$string['task:flushservererrors'] = 'Forward SQL errors to GuardLMS';

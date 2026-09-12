@@ -32,6 +32,15 @@ use local_guardlms\local\head_injector;
  */
 class hook_callbacks {
     /**
+     * Start server error monitoring after configuration is available.
+     *
+     * @param \core\hook\after_config $hook Configuration hook.
+     */
+    public static function after_config(\core\hook\after_config $hook): void {
+        \local_guardlms\local\server_errors::start();
+    }
+
+    /**
      * Add the GuardLMS head content: ownership meta tag and real-time SDK tags.
      *
      * Both are appended from this one callback rather than a second hook
@@ -44,6 +53,7 @@ class hook_callbacks {
     public static function before_standard_head_html_generation(
         \core\hook\output\before_standard_head_html_generation $hook
     ): void {
+        \local_guardlms\local\server_errors::observe_rendered_exception();
         $tag = head_injector::meta_tag();
         $sdktag = head_injector::sdk_tags();
         if ($tag !== '' || $sdktag !== '') {
