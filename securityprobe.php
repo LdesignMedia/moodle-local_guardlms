@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Plugin version and metadata for local_guardlms.
+ * Synthetic external security probes containing no user data.
  *
  * @package    local_guardlms
  * @copyright  2026 Luuk Verhoeven, ldesignmedia.nl <info@ldesignmedia.nl>
@@ -23,14 +23,14 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
+define('NO_MOODLE_COOKIES', true);
+require_once(__DIR__ . '/../../config.php');
 
-$plugin->component = 'local_guardlms';
-$plugin->version = 2026091300;
-// Every feature, real-time monitoring included, supports Moodle 3.9 and later.
-// From 4.4 the head content is emitted through the Hooks API registration in
-// db/hooks.php; below it, through the legacy before_standard_html_head callback
-// in lib.php.
-$plugin->requires = 2020061500; // Moodle 3.9.
-$plugin->maturity = MATURITY_ALPHA;
-$plugin->release = '1.8.0';
+header('Cache-Control: private, no-store');
+header('Vary: Authorization');
+header('Content-Type: text/plain; charset=utf-8');
+if (!\local_guardlms\local\external_probe::authorized($_SERVER['HTTP_AUTHORIZATION'] ?? '')) {
+    http_response_code(403);
+    exit;
+}
+echo \local_guardlms\local\external_probe::marker();
