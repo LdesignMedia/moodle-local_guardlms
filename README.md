@@ -475,3 +475,14 @@ The AJAX observer is restricted to core `lib/ajax/service.php` and
 response. Successful response data and request arguments are never transmitted.
 A caught SQL failure surfaced by AJAX may also produce a separate native SQL-log
 report, because core does not expose a correlation ID or (in production) a trace.
+
+
+### Synthetic external security probes
+
+The inventory now includes a short-lived `external_probe` descriptor for GuardLMS.
+It authorizes access only to a synthetic marker file and a synthetic cache-test
+page; it is not a Moodle user credential. The scanner uses these resources to
+check anonymous file access and shared-cache isolation without requesting user
+records. The endpoints reject missing, incorrect and expired probe credentials.
+The backend must support encrypted probe ingestion before these checks run.
+The marker file is replaced on credential rotation rather than accumulated.

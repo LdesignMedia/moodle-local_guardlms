@@ -186,6 +186,7 @@ class collector {
             'database' => self::database_info(),
         ];
 
+        $payload['external_probe'] = external_probe::collect();
         $payload['config'] = self::config_info();
         $payload['securitychecks'] = security_report::collect();
         $payload['security_config'] = ['hardening' => hardening_report::collect()];

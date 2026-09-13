@@ -55,3 +55,32 @@ function local_guardlms_after_config(): void {
     }
     \local_guardlms\local\server_errors::start();
 }
+
+/**
+ * Serve only the synthetic security file to a valid, expiring probe credential.
+ *
+ * @param stdClass $course Course object.
+ * @param stdClass $cm Course module object.
+ * @param context $context File context.
+ * @param string $filearea File area.
+ * @param array $args File path arguments.
+ * @param bool $forcedownload Whether to force download.
+ * @param array $options File serving options.
+ * @return bool False for unrecognized or unauthorized resources.
+ */
+function local_guardlms_pluginfile($course, $cm, $context, string $filearea, array $args,
+        bool $forcedownload, array $options = []): bool {
+    if ($context->contextlevel !== CONTEXT_SYSTEM || $filearea !== 'securityprobe'
+            || $args !== ['0', 'marker.txt']
+            || !\local_guardlms\local\external_probe::authorized($_SERVER['HTTP_AUTHORIZATION'] ?? '')) {
+        return false;
+    }
+    $file = get_file_storage()->get_file($context->id, 'local_guardlms', 'securityprobe', 0, '/', 'marker.txt');
+    if (!$file) {
+        return false;
+    }
+    header('Cache-Control: private, no-store');
+    header('Vary: Authorization');
+    send_stored_file($file, 0, 0, true, ['cacheability' => 'private']);
+    return true;
+}
