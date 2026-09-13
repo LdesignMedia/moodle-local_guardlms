@@ -32,7 +32,9 @@ use local_guardlms\local\external_probe;
  * @covers \local_guardlms\local\external_probe
  */
 final class external_probe_test extends \advanced_testcase {
-    /** Tests generation, file storage and narrow authorization. */
+    /**
+     * Tests generation, file storage and narrow authorization.
+     */
     public function test_descriptor_contains_only_synthetic_content(): void {
         $this->resetAfterTest();
         $probe = external_probe::collect();
@@ -42,12 +44,20 @@ final class external_probe_test extends \advanced_testcase {
         $this->assertFalse(external_probe::authorized('Bearer wrong'));
         $this->assertTrue(external_probe::authorized('Bearer ' . $probe['token']));
         $this->assertSame($probe, external_probe::collect());
-        $file = get_file_storage()->get_file(\context_system::instance()->id,
-            'local_guardlms', 'securityprobe', 0, '/', 'marker.txt');
+        $file = get_file_storage()->get_file(
+            \context_system::instance()->id,
+            'local_guardlms',
+            'securityprobe',
+            0,
+            '/',
+            'marker.txt'
+        );
         $this->assertSame($probe['marker'], $file->get_content());
     }
 
-    /** Tests expiry and rotation without accumulating test files. */
+    /**
+     * Tests expiry and rotation without accumulating test files.
+     */
     public function test_expired_credentials_stop_working_and_rotate(): void {
         $this->resetAfterTest();
         $probe = external_probe::collect();
@@ -57,20 +67,40 @@ final class external_probe_test extends \advanced_testcase {
         $fresh = external_probe::collect();
         $this->assertNotSame($probe['token'], $fresh['token']);
         $this->assertFalse(external_probe::authorized('Bearer ' . $probe['token']));
-        $files = get_file_storage()->get_area_files(\context_system::instance()->id,
-            'local_guardlms', 'securityprobe', false, 'id', false);
+        $files = get_file_storage()->get_area_files(
+            \context_system::instance()->id,
+            'local_guardlms',
+            'securityprobe',
+            false,
+            'id',
+            false
+        );
         $this->assertCount(1, $files);
     }
 
-    /** Tests that anonymous pluginfile requests cannot access the stored marker. */
+    /**
+     * Tests that anonymous pluginfile requests cannot access the stored marker.
+     */
     public function test_pluginfile_rejects_anonymous_requests(): void {
         global $CFG;
         $this->resetAfterTest();
         external_probe::collect();
         require_once($CFG->dirroot . '/local/guardlms/lib.php');
-        $this->assertFalse(local_guardlms_pluginfile(null, null, \context_system::instance(),
-            'securityprobe', ['0', 'marker.txt'], true));
-        $this->assertFalse(local_guardlms_pluginfile(null, null, \context_system::instance(),
-            'unrelated', ['0', 'marker.txt'], true));
+        $this->assertFalse(local_guardlms_pluginfile(
+            null,
+            null,
+            \context_system::instance(),
+            'securityprobe',
+            ['0', 'marker.txt'],
+            true
+        ));
+        $this->assertFalse(local_guardlms_pluginfile(
+            null,
+            null,
+            \context_system::instance(),
+            'unrelated',
+            ['0', 'marker.txt'],
+            true
+        ));
     }
 }

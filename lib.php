@@ -68,11 +68,20 @@ function local_guardlms_after_config(): void {
  * @param array $options File serving options.
  * @return bool False for unrecognized or unauthorized resources.
  */
-function local_guardlms_pluginfile($course, $cm, $context, string $filearea, array $args,
-        bool $forcedownload, array $options = []): bool {
-    if ($context->contextlevel !== CONTEXT_SYSTEM || $filearea !== 'securityprobe'
+function local_guardlms_pluginfile(
+    $course,
+    $cm,
+    $context,
+    string $filearea,
+    array $args,
+    bool $forcedownload,
+    array $options = []
+): bool {
+    if (
+        $context->contextlevel !== CONTEXT_SYSTEM || $filearea !== 'securityprobe'
             || $args !== ['0', 'marker.txt']
-            || !\local_guardlms\local\external_probe::authorized($_SERVER['HTTP_AUTHORIZATION'] ?? '')) {
+            || !\local_guardlms\local\external_probe::authorized($_SERVER['HTTP_AUTHORIZATION'] ?? '')
+    ) {
         return false;
     }
     $file = get_file_storage()->get_file($context->id, 'local_guardlms', 'securityprobe', 0, '/', 'marker.txt');

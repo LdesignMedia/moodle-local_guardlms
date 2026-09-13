@@ -25,7 +25,9 @@
 
 namespace local_guardlms\local;
 
-/** Issues expiring credentials scoped only to two synthetic marker resources. */
+/**
+ * Issues expiring credentials scoped only to two synthetic marker resources.
+ */
 class external_probe {
     /**
      * Create a fresh descriptor for the next inventory push.
@@ -33,9 +35,11 @@ class external_probe {
      */
     public static function collect(): array {
         $state = json_decode((string) get_config('local_guardlms', 'externalprobe'), true);
-        if (!is_array($state) || !preg_match('/^[a-f0-9]{64}$/', $state['token'] ?? '')
+        if (
+            !is_array($state) || !preg_match('/^[a-f0-9]{64}$/', $state['token'] ?? '')
                 || !preg_match('/^[a-f0-9]{64}$/', $state['marker'] ?? '')
-                || ($state['expires'] ?? 0) < time() + 3600) {
+                || ($state['expires'] ?? 0) < time() + 3600
+        ) {
             $state = [
                 'token' => bin2hex(random_bytes(32)),
                 'marker' => bin2hex(random_bytes(32)),
