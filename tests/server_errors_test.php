@@ -126,10 +126,31 @@ final class server_errors_test extends \advanced_testcase {
         $event = $reporter->batches[0][0];
         $this->assertSame('sql', $event['type']);
         $this->assertNotEmpty($event['stackTrace']);
-        $this->assertStringNotContainsString('private-value', json_encode($event));
-        $this->assertArrayNotHasKey('sqlparams', $event);
+        // The failing statement and its parameters ship in customData so the
+        // dashboard can show exactly what was executed. Non-secret values stay
+        // visible; scrub_sql() masks what is secret-shaped (covered below).
+        $this->assertArrayHasKey('customData', $event);
+        $this->assertStringContainsString('guardlms_nonexistent_table', $event['customData']['sqlQuery']);
+        $this->assertStringContainsString('private-value', $event['customData']['sqlParams']);
         $reporter->flush_sql_logs();
         $this->assertCount(1, $reporter->batches);
+    }
+
+    /**
+     * Query context keeps ordinary literals visible but masks secrets, hashes and emails.
+     */
+    public function test_sql_context_redaction(): void {
+        $context = server_errors::sql_context(
+            "UPDATE {user} SET password = '\$2y\$10\$abcdefghijklmnopqrstuvwxyzabcdef' WHERE email = 'jane@example.com'",
+            "array (\n  'token' => 'abc123',\n  'id' => 5,\n)"
+        );
+        $this->assertStringContainsString('UPDATE {user}', $context['sqlQuery']);
+        $this->assertStringNotContainsString('$2y$10$', $context['sqlQuery']);
+        $this->assertStringNotContainsString('jane@example.com', $context['sqlQuery']);
+        $this->assertStringContainsString('[email]', $context['sqlQuery']);
+        $this->assertStringNotContainsString('abc123', $context['sqlParams']);
+        $this->assertStringContainsString('[redacted]', $context['sqlParams']);
+        $this->assertStringContainsString("'id' => 5", $context['sqlParams']);
     }
 
     /**

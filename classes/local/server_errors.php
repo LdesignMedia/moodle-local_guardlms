@@ -713,9 +713,10 @@ class server_errors {
         $value = str_replace([$CFG->dirroot, $CFG->dataroot], ['[dirroot]', '[dataroot]'], $value);
         // Password hashes (bcrypt and friends) appearing as parameter values.
         $value = preg_replace('/\$2[aby]\$\d{2}\$[.\/A-Za-z0-9]{20,}/', '[redacted]', $value);
-        // Secret-shaped key/value pairs in either SQL or var_export syntax.
+        // Secret-shaped key/value pairs in SQL, URL or var_export syntax; the
+        // key may itself be quoted in exported arrays ('token' => ...).
         $value = preg_replace(
-            '/(\b(?:password|passwd|secret|[a-z_]*token|api_?key|authorization|sesskey|nonce)\b\s*(?:=>|[=:])\s*)(?:\'[^\']*\'|"[^"]*"|[^\s,&;)]+)/i',
+            '/(["\']?\b(?:password|passwd|secret|[a-z_]*token|api_?key|authorization|sesskey|nonce)\b["\']?\s*(?:=>|[=:])\s*)(?:\'[^\']*\'|"[^"]*"|[^\s,&;)]+)/i',
             '$1[redacted]',
             $value
         );
