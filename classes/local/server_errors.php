@@ -263,7 +263,10 @@ class server_errors {
                 $event['message'] = self::scrub($exception['message'], 1000) ?: 'Moodle AJAX exception';
                 $event['handled'] = true;
                 $event['context'] = 'Moodle AJAX exception';
-                $event['customData'] = ['moodleErrorCode' => self::scrub($code, 100)];
+                $event['customData'] = array_merge(
+                    ['moodleErrorCode' => self::scrub($code, 100)],
+                    $this->request_context()
+                );
                 if (is_string($exception['backtrace'] ?? null)) {
                     $event['stackTrace'] = self::scrub($exception['backtrace'], 10000);
                 }
@@ -383,7 +386,9 @@ class server_errors {
     }
 
     /**
-     * Build a safe throwable payload; never serialize trace arguments or Moodle debuginfo.
+     * Build a safe throwable payload; never serialize trace arguments. For SQL
+     * failures the exception's debuginfo is parsed into a redacted query/params
+     * fragment rather than forwarded raw.
      * @param \Throwable $exception Throwable to report.
      * @param bool $handled Whether application code handled this failure.
      * @return array Ingest event.
@@ -393,7 +398,8 @@ class server_errors {
         $trace = array_merge($trace, $exception->getTrace());
         $event = $this->base_event();
         $event['type'] = $exception instanceof \dml_exception ? 'sql' : 'php';
-        $event['message'] = self::scrub($exception->getMessage(), 1000) ?: get_class($exception);
+        $event['message'] = self::scrub(self::exception_message($exception), 1000) ?: get_class($exception);
+        $event['customData'] = array_merge($event['customData'] ?? [], $this->request_context());
         $event['errorClass'] = substr(get_class($exception), 0, 255);
         $event['handled'] = $handled;
         $event['severity'] = $handled ? 'medium' : 'high';
@@ -409,6 +415,14 @@ class server_errors {
             $previous = $previous->getPrevious();
         }
         $event['stackTrace'] = self::scrub($stack, 10000);
+        if ($exception instanceof \dml_exception) {
+            // debuginfo carries the failing statement and params only when the
+            // site runs with Moodle debugging on; empty otherwise.
+            $sqlcontext = self::sql_context_from_debuginfo((string) ($exception->debuginfo ?? ''));
+            if ($sqlcontext !== []) {
+                $event['customData'] = array_merge($event['customData'] ?? [], $sqlcontext);
+            }
+        }
         return $event;
     }
 
@@ -441,7 +455,7 @@ class server_errors {
             // Receipts rather than a moving MAX(id) cursor: a long transaction may
             // commit an older ID after a newer request has already been delivered.
             $logs = $DB->get_records_sql(
-                'SELECT q.id, q.info, q.backtrace, q.timelogged
+                'SELECT q.id, q.info, q.backtrace, q.timelogged, q.sqltext, q.sqlparams
                    FROM {log_queries} q
               LEFT JOIN {local_guardlms_sql_sent} s ON s.logid = q.id
                   WHERE q.id > ? AND q.error = 1 AND s.id IS NULL
@@ -467,6 +481,12 @@ class server_errors {
                     }
                 }
                 $event['timestamp'] = gmdate('c', (int) $log->timelogged);
+                // The native log always has the failing statement and params,
+                // independent of the site's debugging level.
+                $sqlcontext = self::sql_context((string) ($log->sqltext ?? ''), (string) ($log->sqlparams ?? ''));
+                if ($sqlcontext !== []) {
+                    $event['customData'] = array_merge($event['customData'] ?? [], $sqlcontext);
+                }
                 // Core log_queries has no request URL or handled flag; do not invent them.
                 $event['pageUrl'] = $this->siteurl;
                 $event['context'] = 'Moodle SQL error log';
@@ -486,13 +506,20 @@ class server_errors {
     }
 
     /**
-     * Shared, non-identifying context. No query strings, cookies, headers or CLI arguments.
+     * Shared event context. No cookies, headers or CLI arguments; the query
+     * string is included with secret-shaped parameters masked by scrub().
      * @return array Base event.
      */
     private function base_event(): array {
-        $path = defined('CLI_SCRIPT') && CLI_SCRIPT ? '' : ($_SERVER['SCRIPT_NAME'] ?? '');
+        $iscli = defined('CLI_SCRIPT') && CLI_SCRIPT;
+        $path = $iscli ? '' : ($_SERVER['SCRIPT_NAME'] ?? '');
+        $url = $path !== '' ? $this->origin . '/' . ltrim($path, '/') : $this->siteurl;
+        $qs = $iscli ? '' : trim((string) ($_SERVER['QUERY_STRING'] ?? ''));
+        if ($qs !== '') {
+            $url .= '?' . self::scrub($qs, 500);
+        }
         return [
-            'pageUrl' => substr($path !== '' ? $this->origin . '/' . ltrim($path, '/') : $this->siteurl, 0, 1000),
+            'pageUrl' => substr($url, 0, 1000),
             'timestamp' => gmdate('c'),
             'severity' => 'high',
             'appVersion' => substr($this->appversion, 0, 50),
@@ -501,7 +528,79 @@ class server_errors {
     }
 
     /**
-     * Remove common secrets and literals; SQL text/parameters and exception debuginfo are never sent.
+     * Request context needed to reproduce a failure: method, GET and POST data.
+     * Sensitive keys are masked by name; values are bounded and scrubbed.
+     * @return array customData fragment (empty on CLI).
+     */
+    private function request_context(): array {
+        if (defined('CLI_SCRIPT') && CLI_SCRIPT) {
+            return [];
+        }
+        $context = [];
+        $method = substr((string) ($_SERVER['REQUEST_METHOD'] ?? ''), 0, 10);
+        if ($method !== '') {
+            $context['requestMethod'] = $method;
+        }
+        $get = self::scrub_params($_GET);
+        if ($get !== '') {
+            $context['requestQuery'] = $get;
+        }
+        $post = self::scrub_params($_POST);
+        if ($post !== '') {
+            $context['requestPost'] = $post;
+        }
+        return $context;
+    }
+
+    /**
+     * Export request parameters as bounded JSON with sensitive keys masked.
+     * @param array $params Raw $_GET/$_POST.
+     * @param int $limit Maximum output length.
+     * @return string JSON object string, empty when there is nothing to show.
+     */
+    public static function scrub_params(array $params, int $limit = 2000): string {
+        $clean = [];
+        $count = 0;
+        foreach ($params as $key => $value) {
+            if ($count++ >= 50) {
+                $clean['…'] = 'truncated';
+                break;
+            }
+            $k = (string) $key;
+            if (self::is_sensitive_key($k)) {
+                $clean[$k] = '[redacted]';
+                continue;
+            }
+            if (is_object($value) && !($value instanceof \Stringable)) {
+                continue;
+            }
+            if (is_array($value)) {
+                $value = json_encode($value, JSON_INVALID_UTF8_SUBSTITUTE);
+            }
+            $clean[$k] = self::scrub_sql((string) $value, 200);
+        }
+        if ($clean === []) {
+            return '';
+        }
+        $out = json_encode($clean, JSON_INVALID_UTF8_SUBSTITUTE | JSON_UNESCAPED_SLASHES);
+        return \core_text::substr((string) $out, 0, $limit);
+    }
+
+    /**
+     * Keys whose values must never leave the site (credentials, CSRF tokens).
+     * @param string $key Parameter name.
+     * @return bool Whether the value must be masked.
+     */
+    private static function is_sensitive_key(string $key): bool {
+        return (bool) preg_match(
+            '/pass(word)?|secret|[a-z_]*token|api_?key|authorization|sesskey|nonce|csrf|credential|private/i',
+            $key
+        );
+    }
+
+    /**
+     * Remove common secrets and literals from messages and stack traces. For the
+     * query/params fragment attached to SQL failures, see scrub_sql().
      * @param string $value Input text.
      * @param int $limit Maximum output length.
      * @return string Redacted text.
@@ -515,6 +614,112 @@ class server_errors {
             $value
         );
         $value = preg_replace('/([\'"])(?:\\\\.|(?!\1).)*\1/s', '[redacted]', $value);
+        $value = preg_replace('/[\w.+-]+@[\w.-]+\.[a-z]{2,}/i', '[email]', $value);
+        return \core_text::substr($value, 0, $limit);
+    }
+
+    /**
+     * Stable exception message for grouping.
+     *
+     * With debugging on, Moodle embeds debuginfo (the failing query and its
+     * params) into a dml exception's getMessage(). That would split error
+     * groups by the site's debug level and duplicate the query context that
+     * customData already carries, so strip it here.
+     *
+     * @param \Throwable $exception Throwable to read.
+     * @return string Message without the embedded debuginfo suffix.
+     */
+    public static function exception_message(\Throwable $exception): string {
+        $message = $exception->getMessage();
+        if (!($exception instanceof \dml_exception)) {
+            return $message;
+        }
+        $debuginfo = trim((string) ($exception->debuginfo ?? ''));
+        if ($debuginfo === '') {
+            return $message;
+        }
+        $pos = strpos($message, $debuginfo);
+        if ($pos !== false) {
+            return rtrim(substr($message, 0, $pos), " \t\n(");
+        }
+        // Whitespace inside the embedded copy can differ from debuginfo;
+        // fall back to matching on the debuginfo's first line.
+        $firstline = preg_quote(trim((string) strtok($debuginfo, "\n")), '/');
+        if ($firstline !== '' && preg_match('/^(.*?)\s*\(\s*' . $firstline . '.*$/is', $message, $m)) {
+            return trim($m[1]);
+        }
+        return $message;
+    }
+
+    /**
+     * Query context for SQL failures: the failing statement and its parameters.
+     *
+     * Secrets, password hashes and emails are redacted; other literals stay
+     * visible so the statement remains debuggable.
+     *
+     * @param string $sqltext Raw SQL from log_queries.sqltext or debuginfo.
+     * @param string $sqlparams var_export'ed params from log_queries.sqlparams or debuginfo.
+     * @return array customData fragment with sqlQuery/sqlParams keys.
+     */
+    public static function sql_context(string $sqltext, string $sqlparams): array {
+        $context = [];
+        if (trim($sqltext) !== '') {
+            $context['sqlQuery'] = self::scrub_sql($sqltext, 4000);
+        }
+        if (trim($sqlparams) !== '') {
+            $context['sqlParams'] = self::scrub_sql($sqlparams, 4000);
+        }
+        return $context;
+    }
+
+    /**
+     * Extract query and parameters from a dml exception's debuginfo.
+     *
+     * Moodle fills debuginfo with the SQL statement followed by a
+     * print_r-style params block and an "Error code:" tail — and only when
+     * debugging is enabled on the site.
+     *
+     * @param string $debuginfo Raw exception debuginfo.
+     * @return array customData fragment with sqlQuery/sqlParams keys, possibly empty.
+     */
+    public static function sql_context_from_debuginfo(string $debuginfo): array {
+        if (trim($debuginfo) === '') {
+            return [];
+        }
+        $sql = '';
+        $params = '';
+        if (preg_match('/^\s*(?:SELECT|INSERT|UPDATE|DELETE|WITH)\b.+?(?=^\s*(?:\[|array\s*\()|^\s*Error code:|\z)/ims', $debuginfo, $m)) {
+            $sql = trim($m[0]);
+        }
+        if (preg_match('/(?:\[?\s*array\s*\().+?(?=^\s*Error code:|\z)/ims', $debuginfo, $m)) {
+            $params = trim($m[0]);
+        }
+        return self::sql_context($sql, $params);
+    }
+
+    /**
+     * Redact secrets from SQL text while keeping the statement debuggable.
+     *
+     * Unlike scrub(), quoted string literals stay intact: the point of this
+     * field is seeing which values the failing query ran with. Password hashes,
+     * secret-shaped assignments and emails are still masked.
+     *
+     * @param string $value SQL text or exported params.
+     * @param int $limit Maximum output length.
+     * @return string Redacted text.
+     */
+    public static function scrub_sql(string $value, int $limit): string {
+        global $CFG;
+        $value = str_replace([$CFG->dirroot, $CFG->dataroot], ['[dirroot]', '[dataroot]'], $value);
+        // Password hashes (bcrypt and friends) appearing as parameter values.
+        $value = preg_replace('/\$2[aby]\$\d{2}\$[.\/A-Za-z0-9]{20,}/', '[redacted]', $value);
+        // Secret-shaped key/value pairs in SQL, URL or var_export syntax; the
+        // key may itself be quoted in exported arrays ('token' => ...).
+        $value = preg_replace(
+            '/(["\']?\b(?:password|passwd|secret|[a-z_]*token|api_?key|authorization|sesskey|nonce)\b["\']?\s*(?:=>|[=:])\s*)(?:\'[^\']*\'|"[^"]*"|[^\s,&;)]+)/i',
+            '$1[redacted]',
+            $value
+        );
         $value = preg_replace('/[\w.+-]+@[\w.-]+\.[a-z]{2,}/i', '[email]', $value);
         return \core_text::substr($value, 0, $limit);
     }

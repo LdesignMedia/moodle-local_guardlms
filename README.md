@@ -451,8 +451,14 @@ An uncaught SQL exception with a matching committed native log is sent only via
 that log. Transactional exceptions are sent directly before core rolls back.
 
 Reports appear under **PHP** and **SQL** in the existing realtime error overview.
-Stack traces omit function arguments; SQL text/parameters and exception debuginfo
-are never transmitted. Common secrets, quoted literals and emails are redacted.
+Stack traces omit function arguments, and raw exception debuginfo is never
+transmitted. SQL errors do carry the executed statement and bound parameters as
+`sqlQuery`/`sqlParams` (parsed from debuginfo when debugging is on, otherwise from
+the native SQL log), plus the full request URL with query string, the request
+method and GET/POST parameters (`requestMethod`/`requestQuery`/`requestPost`), so
+the failing request is reproducible from the dashboard. Sensitive parameter names
+(`sesskey`, passwords, tokens, API keys) are masked by name, and password hashes
+and emails are redacted before sending.
 Moodle's native `log_queries` table **does** store SQL text and parameters locally;
 its retention and cleanup remain the site administrator’s responsibility. Plugin delivery receipts store log IDs only.
 Native SQL logs contain no request URL or handled flag, so their reports use the
