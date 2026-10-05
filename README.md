@@ -369,6 +369,8 @@ MariaDB **11.4.7** at `moodle53.webvs.nl`, connected to GuardLMS staging:
 - Admin login and the connected settings page render successfully, including
   browser monitoring and PHP/SQL error opt-in controls. Requests without the
   required probe credential or refresh sesskey are refused.
+- With browser monitoring temporarily enabled, the Moodle 5.3 head hook emits
+  exactly one SDK initialization and one ownership verification tag.
 
 The staging exchange used the existing test website and a server-issued test
 code; it did not exercise the dashboard consent screen in a browser. The

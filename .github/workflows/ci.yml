@@ -13,7 +13,11 @@ jobs:
   # catches up; its main branch will move on to the next Moodle release.
   moodle53:
     name: Moodle 5.3 / PHP ${{ matrix.php }} / ${{ matrix.database }}
+    if: github.event_name == 'pull_request' || github.ref_protected
     runs-on: ubuntu-24.04
+    concurrency:
+      group: moodle53-${{ github.ref }}-${{ matrix.php }}-${{ matrix.database }}
+      cancel-in-progress: true
     permissions:
       contents: read
     strategy:
