@@ -38,14 +38,14 @@ jobs:
           --health-cmd="healthcheck.sh --connect --innodb_initialized"
           --health-interval=10s --health-timeout=5s --health-retries=3
       postgres:
-        image: ${{ matrix.database == 'pgsql' && 'postgres:16' || '' }}
+        image: ${{ matrix.database == 'pgsql' && 'postgres:17' || '' }}
         env:
           POSTGRES_USER: postgres
           POSTGRES_HOST_AUTH_METHOD: trust
         ports:
           - 5432:5432
         options: >-
-          --health-cmd=pg_isready
+          --health-cmd="pg_isready -U postgres"
           --health-interval=10s --health-timeout=5s --health-retries=3
     steps:
       - uses: actions/checkout@v6
