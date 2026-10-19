@@ -59,12 +59,12 @@ if ($hassiteconfig) {
         $connecturl = new moodle_url('/local/guardlms/connect.php', ['sesskey' => sesskey()]);
         $disconnecturl = new moodle_url('/local/guardlms/disconnect.php', ['sesskey' => sesskey()]);
 
-        // Branded heading: favicon before the plugin name. The image is built
-        // with the full wwwroot so it resolves on subdirectory installs, and the
-        // plain core title above is hidden by styles.css to avoid a duplicate.
+        // Use the same shield mark as the GuardLMS dashboard, bundled locally.
+        // The full wwwroot supports subdirectory installs. The adjacent name
+        // labels the heading, so the image is decorative for screen readers.
         $logo = html_writer::img(
-            $CFG->wwwroot . '/local/guardlms/pix/icon.png',
-            get_string('pluginname', 'local_guardlms'),
+            $CFG->wwwroot . '/local/guardlms/pix/logo.svg',
+            '',
             ['class' => 'local-guardlms-logo']
         );
 
