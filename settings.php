@@ -139,7 +139,7 @@ if ($hassiteconfig) {
             $statusclass = 'local-guardlms-badge-disconnected';
         }
 
-        $status = $onboarding . html_writer::div(
+        $status = html_writer::div(
             html_writer::span(get_string('connect:statuslabel', 'local_guardlms')) . ' ' .
             html_writer::span($statustext, 'local-guardlms-badge ' . $statusclass),
             'local-guardlms-status'
@@ -202,6 +202,12 @@ if ($hassiteconfig) {
         $settings->add(new admin_setting_heading(
             'local_guardlms/header',
             $logo . get_string('pluginname', 'local_guardlms'),
+            $onboarding
+        ));
+
+        $settings->add(new admin_setting_heading(
+            'local_guardlms/connection',
+            get_string('connect:connectionheading', 'local_guardlms'),
             $status
         ));
 

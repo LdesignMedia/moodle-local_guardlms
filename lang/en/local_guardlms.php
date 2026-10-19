@@ -28,6 +28,7 @@ defined('MOODLE_INTERNAL') || die();
 $string['pluginname'] = 'GuardLMS';
 
 // Connect flow.
+$string['connect:connectionheading'] = 'Connection';
 $string['connect:title'] = 'Connect to GuardLMS';
 $string['connect:settingheading'] = 'Connect to GuardLMS';
 $string['connect:settingdesc'] = 'Connect this site to GuardLMS with one click. You only need a GuardLMS account (a free account is enough), no API keys to copy.';
