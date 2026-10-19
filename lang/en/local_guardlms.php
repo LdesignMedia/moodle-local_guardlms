@@ -28,6 +28,7 @@ defined('MOODLE_INTERNAL') || die();
 $string['pluginname'] = 'GuardLMS';
 
 // Connect flow.
+$string['connect:connectionheading'] = 'Connection';
 $string['connect:title'] = 'Connect to GuardLMS';
 $string['connect:settingheading'] = 'Connect to GuardLMS';
 $string['connect:settingdesc'] = 'Connect this site to GuardLMS with one click. You only need a GuardLMS account (a free account is enough), no API keys to copy.';
@@ -48,6 +49,22 @@ $string['connect:connectedat'] = 'Connected at: {$a}';
 $string['connect:keyexpires'] = 'Expires at: {$a}';
 $string['connect:lastpush'] = 'Last push: {$a}';
 $string['connect:success'] = 'Your site is now connected to GuardLMS and its first inventory has been sent.';
+
+$string['onboarding:titlenew'] = 'Get started with GuardLMS';
+$string['onboarding:descriptionnew'] = 'Bring your Moodle security findings, updates and monitoring together in one dashboard. A free account is enough to get started.';
+$string['onboarding:titleconnected'] = 'Your Moodle security overview';
+$string['onboarding:descriptionconnected'] = 'Open your GuardLMS dashboard to review security findings, available updates and monitoring for your Moodle site.';
+$string['onboarding:titlerejected'] = 'Restore your GuardLMS connection';
+$string['onboarding:descriptionrejected'] = 'Open your dashboard to check your account, then use Reconnect below to restore reporting for this site.';
+$string['onboarding:stepaccount'] = 'Create your account';
+$string['onboarding:stepaccountdescription'] = 'Sign up for GuardLMS, or use your existing account.';
+$string['onboarding:stepconnect'] = 'Connect this site';
+$string['onboarding:stepconnectdescription'] = 'Return here and select Connect below to link this Moodle site.';
+$string['onboarding:stepreview'] = 'Explore your dashboard';
+$string['onboarding:stepreviewdescription'] = 'Review your site\'s security findings and monitoring in GuardLMS.';
+$string['onboarding:createaccount'] = 'Create a free account';
+$string['onboarding:opendashboard'] = 'Open dashboard';
+$string['onboarding:newtabhint'] = 'GuardLMS links open in a new tab, keeping these settings open.';
 
 // Settings.
 $string['settings:advancedheading'] = 'Advanced settings';

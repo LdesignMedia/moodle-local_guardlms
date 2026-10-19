@@ -59,14 +59,71 @@ if ($hassiteconfig) {
         $connecturl = new moodle_url('/local/guardlms/connect.php', ['sesskey' => sesskey()]);
         $disconnecturl = new moodle_url('/local/guardlms/disconnect.php', ['sesskey' => sesskey()]);
 
-        // Branded heading: favicon before the plugin name. The image is built
-        // with the full wwwroot so it resolves on subdirectory installs, and the
-        // plain core title above is hidden by styles.css to avoid a duplicate.
+        // Use the same shield mark as the GuardLMS dashboard, bundled locally.
+        // The full wwwroot supports subdirectory installs. The adjacent name
+        // labels the heading, so the image is decorative for screen readers.
         $logo = html_writer::img(
-            $CFG->wwwroot . '/local/guardlms/pix/icon.png',
-            get_string('pluginname', 'local_guardlms'),
+            $CFG->wwwroot . '/local/guardlms/pix/logo.svg',
+            '',
             ['class' => 'local-guardlms-logo']
         );
+
+        // Account creation is separate from connect so an admin can finish
+        // signing up before starting the short-lived connection handshake.
+        $baseurl = \local_guardlms\local\config::baseurl();
+        $onboardingstate = $rejected ? 'rejected' : ($connected ? 'connected' : 'new');
+        $onboarding = html_writer::tag(
+            'h3',
+            get_string('onboarding:title' . $onboardingstate, 'local_guardlms'),
+            ['id' => 'local-guardlms-onboarding-title']
+        );
+        $onboarding .= html_writer::tag(
+            'p',
+            get_string('onboarding:description' . $onboardingstate, 'local_guardlms'),
+            ['class' => 'local-guardlms-onboarding-description']
+        );
+        if (!$connected) {
+            $steps = '';
+            foreach (['account', 'connect', 'review'] as $step) {
+                $steps .= html_writer::tag(
+                    'li',
+                    html_writer::tag('strong', get_string('onboarding:step' . $step, 'local_guardlms')) .
+                    html_writer::span(get_string('onboarding:step' . $step . 'description', 'local_guardlms'))
+                );
+            }
+            $onboarding .= html_writer::tag('ol', $steps, ['class' => 'local-guardlms-onboarding-steps']);
+        }
+
+        $linkattributes = [
+            'target' => '_blank',
+            'rel' => 'noopener noreferrer',
+            'aria-describedby' => 'local-guardlms-onboarding-linkhint',
+        ];
+        $externalicon = html_writer::span(' ↗', '', ['aria-hidden' => 'true']);
+        $onboardinglinks = '';
+        if (!$connected) {
+            $onboardinglinks .= html_writer::link(
+                new moodle_url($baseurl . '/register'),
+                get_string('onboarding:createaccount', 'local_guardlms') . $externalicon,
+                $linkattributes + ['class' => 'btn local-guardlms-onboarding-primary']
+            );
+        }
+        $onboardinglinks .= html_writer::link(
+            new moodle_url($baseurl . '/'),
+            get_string('onboarding:opendashboard', 'local_guardlms') . $externalicon,
+            $linkattributes + ['class' => 'btn ' . ($connected
+                ? 'local-guardlms-onboarding-primary' : 'local-guardlms-onboarding-secondary')]
+        );
+        $onboarding .= html_writer::div($onboardinglinks, 'local-guardlms-onboarding-actions');
+        $onboarding .= html_writer::tag(
+            'p',
+            get_string('onboarding:newtabhint', 'local_guardlms'),
+            ['class' => 'local-guardlms-onboarding-hint', 'id' => 'local-guardlms-onboarding-linkhint']
+        );
+        $onboarding = html_writer::tag('section', $onboarding, [
+            'class' => 'local-guardlms-onboarding',
+            'aria-labelledby' => 'local-guardlms-onboarding-title',
+        ]);
 
         // One status line: green when connected, amber when GuardLMS refuses
         // the key, red when there is no connection. The WordPress plugin
@@ -116,9 +173,6 @@ if ($hassiteconfig) {
             if ($lastpush) {
                 $details[] = get_string('connect:lastpush', 'local_guardlms', userdate($lastpush));
             }
-        } else {
-            $status .= html_writer::tag('p', get_string('connect:intro', 'local_guardlms'));
-            $status .= html_writer::tag('p', get_string('connect:freeaccount', 'local_guardlms'));
         }
 
         // Connect / Reconnect in the GuardLMS brand colour, plus Disconnect once
@@ -148,6 +202,12 @@ if ($hassiteconfig) {
         $settings->add(new admin_setting_heading(
             'local_guardlms/header',
             $logo . get_string('pluginname', 'local_guardlms'),
+            $onboarding
+        ));
+
+        $settings->add(new admin_setting_heading(
+            'local_guardlms/connection',
+            get_string('connect:connectionheading', 'local_guardlms'),
             $status
         ));
 
