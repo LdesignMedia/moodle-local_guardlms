@@ -81,11 +81,18 @@ See the full [feature overview](https://guardlms.com/features) and
 ## Connect to GuardLMS
 
 1. Open Site administration > Plugins > Local plugins > GuardLMS.
-2. Click **Connect to GuardLMS**. Your browser is sent to GuardLMS where you log
+2. New to GuardLMS? Choose **Create a free account** in the welcome banner.
+   Registration opens in a new tab, so you can return to Moodle when ready.
+   If you already have an account, skip this step.
+3. Click **Connect**. Your browser is sent to GuardLMS where you log
    in or create a free account and confirm the connection.
-3. Done. The site is registered in GuardLMS, site ownership is verified
+4. Done. The site is registered in GuardLMS, site ownership is verified
    automatically, the push key is installed, and the first inventory push is
    queued.
+
+Use **Open dashboard** in the banner whenever you want to review your site in
+GuardLMS. Both links use the configured GuardLMS base URL, including staging or
+self-hosted instances. Opening the banner links does not start a connection.
 
 The daily push runs from Moodle cron. You can also run it on demand from Site
 administration > Server > Scheduled tasks ("Push site information to

@@ -16,6 +16,108 @@
     vertical-align: text-bottom;
 }
 
+/* Account setup and dashboard access, kept separate from the connect action. */
+.local-guardlms-onboarding {
+    margin: 16px 0 24px;
+    padding: 24px;
+    border: 1px solid #f3c9a8;
+    border-left: 4px solid #c2410c;
+    border-radius: 12px;
+    background: linear-gradient(120deg, #fff7ed, #fff);
+    color: #292524;
+}
+
+.local-guardlms-onboarding h3 {
+    margin: 0 0 8px;
+    color: #292524;
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+
+.local-guardlms-onboarding-description {
+    max-width: 65ch;
+    margin-bottom: 20px;
+}
+
+.local-guardlms-onboarding-steps {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+    margin: 0 0 24px;
+    padding-left: 24px;
+}
+
+.local-guardlms-onboarding-steps li {
+    padding-left: 4px;
+}
+
+.local-guardlms-onboarding-steps li::marker {
+    color: #9a3412;
+    font-weight: 700;
+}
+
+.local-guardlms-onboarding-steps strong,
+.local-guardlms-onboarding-steps span {
+    display: block;
+}
+
+.local-guardlms-onboarding-steps span {
+    margin-top: 4px;
+    color: #57534e;
+    font-size: 0.9rem;
+}
+
+.local-guardlms-onboarding-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.local-guardlms-onboarding-primary.btn {
+    background-color: #c2410c;
+    border-color: #c2410c;
+    color: #fff;
+}
+
+.local-guardlms-onboarding-primary.btn:hover {
+    background-color: #9a3412;
+    border-color: #9a3412;
+    color: #fff;
+}
+
+.local-guardlms-onboarding-secondary.btn {
+    background-color: #fff;
+    border-color: #a8a29e;
+    color: #292524;
+}
+
+.local-guardlms-onboarding-secondary.btn:hover {
+    background-color: #ffedd5;
+    color: #292524;
+}
+
+.local-guardlms-onboarding .btn:focus {
+    outline: 3px solid #292524;
+    outline-offset: 3px;
+}
+
+.local-guardlms-onboarding-hint {
+    margin: 12px 0 0;
+    color: #57534e;
+    font-size: 0.85rem;
+}
+
+@media (max-width: 767px) {
+    .local-guardlms-onboarding {
+        padding: 20px;
+    }
+
+    .local-guardlms-onboarding-steps {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+}
+
 .local-guardlms-btn.btn {
     background-color: #fa6e10;
     border-color: #fa6e10;

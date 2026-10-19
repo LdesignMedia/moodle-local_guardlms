@@ -68,6 +68,63 @@ if ($hassiteconfig) {
             ['class' => 'local-guardlms-logo']
         );
 
+        // Account creation is separate from connect so an admin can finish
+        // signing up before starting the short-lived connection handshake.
+        $baseurl = \local_guardlms\local\config::baseurl();
+        $onboardingstate = $rejected ? 'rejected' : ($connected ? 'connected' : 'new');
+        $onboarding = html_writer::tag(
+            'h3',
+            get_string('onboarding:title' . $onboardingstate, 'local_guardlms'),
+            ['id' => 'local-guardlms-onboarding-title']
+        );
+        $onboarding .= html_writer::tag(
+            'p',
+            get_string('onboarding:description' . $onboardingstate, 'local_guardlms'),
+            ['class' => 'local-guardlms-onboarding-description']
+        );
+        if (!$connected) {
+            $steps = '';
+            foreach (['account', 'connect', 'review'] as $step) {
+                $steps .= html_writer::tag(
+                    'li',
+                    html_writer::tag('strong', get_string('onboarding:step' . $step, 'local_guardlms')) .
+                    html_writer::span(get_string('onboarding:step' . $step . 'description', 'local_guardlms'))
+                );
+            }
+            $onboarding .= html_writer::tag('ol', $steps, ['class' => 'local-guardlms-onboarding-steps']);
+        }
+
+        $linkattributes = [
+            'target' => '_blank',
+            'rel' => 'noopener noreferrer',
+            'aria-describedby' => 'local-guardlms-onboarding-linkhint',
+        ];
+        $externalicon = html_writer::span(' ↗', '', ['aria-hidden' => 'true']);
+        $onboardinglinks = '';
+        if (!$connected) {
+            $onboardinglinks .= html_writer::link(
+                new moodle_url($baseurl . '/register'),
+                get_string('onboarding:createaccount', 'local_guardlms') . $externalicon,
+                $linkattributes + ['class' => 'btn local-guardlms-onboarding-primary']
+            );
+        }
+        $onboardinglinks .= html_writer::link(
+            new moodle_url($baseurl . '/'),
+            get_string('onboarding:opendashboard', 'local_guardlms') . $externalicon,
+            $linkattributes + ['class' => 'btn ' . ($connected
+                ? 'local-guardlms-onboarding-primary' : 'local-guardlms-onboarding-secondary')]
+        );
+        $onboarding .= html_writer::div($onboardinglinks, 'local-guardlms-onboarding-actions');
+        $onboarding .= html_writer::tag(
+            'p',
+            get_string('onboarding:newtabhint', 'local_guardlms'),
+            ['class' => 'local-guardlms-onboarding-hint', 'id' => 'local-guardlms-onboarding-linkhint']
+        );
+        $onboarding = html_writer::tag('section', $onboarding, [
+            'class' => 'local-guardlms-onboarding',
+            'aria-labelledby' => 'local-guardlms-onboarding-title',
+        ]);
+
         // One status line: green when connected, amber when GuardLMS refuses
         // the key, red when there is no connection. The WordPress plugin
         // renders the same block, so both plugins look the same.
@@ -82,7 +139,7 @@ if ($hassiteconfig) {
             $statusclass = 'local-guardlms-badge-disconnected';
         }
 
-        $status = html_writer::div(
+        $status = $onboarding . html_writer::div(
             html_writer::span(get_string('connect:statuslabel', 'local_guardlms')) . ' ' .
             html_writer::span($statustext, 'local-guardlms-badge ' . $statusclass),
             'local-guardlms-status'
@@ -116,9 +173,6 @@ if ($hassiteconfig) {
             if ($lastpush) {
                 $details[] = get_string('connect:lastpush', 'local_guardlms', userdate($lastpush));
             }
-        } else {
-            $status .= html_writer::tag('p', get_string('connect:intro', 'local_guardlms'));
-            $status .= html_writer::tag('p', get_string('connect:freeaccount', 'local_guardlms'));
         }
 
         // Connect / Reconnect in the GuardLMS brand colour, plus Disconnect once
