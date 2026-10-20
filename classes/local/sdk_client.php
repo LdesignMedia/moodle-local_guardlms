@@ -72,8 +72,6 @@ class sdk_client {
         int $timeout = self::DEFAULT_TIMEOUT,
         ?self $client = null
     ): bool {
-        global $CFG;
-
         $apikey = trim((string) get_config(sdk_config::COMPONENT, 'apikey'));
         if ($apikey === '') {
             // Not connected: there is no credential to authenticate with and
@@ -84,7 +82,7 @@ class sdk_client {
         $client = $client ?? new self();
 
         try {
-            $result = $client->request($action, $CFG->wwwroot, $apikey, $timeout);
+            $result = $client->request($action, config::siteurl(), $apikey, $timeout);
         } catch (\Throwable $e) {
             sdk_config::record_refresh_error($e->getMessage());
 
@@ -150,7 +148,7 @@ class sdk_client {
      * network, and kept protected so nothing outside this class talks HTTP.
      *
      * @param string $action One of fetch, rotate, revoke.
-     * @param string $siteurl This site's wwwroot, which the backend matches against the website record.
+     * @param string $siteurl This site's reporting URL, which the backend matches against the website record.
      * @param string $apikey The site-bound push key from the connect flow.
      * @param int $timeout Request timeout in seconds.
      * @return array{status: int, body: string}
