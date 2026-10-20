@@ -89,11 +89,19 @@ class pusher {
         }
 
         if ($httpcode < 200 || $httpcode >= 300) {
+            $mismatch = $httpcode === 422 ? connect_manager::note_site_url_mismatch($response) : null;
+            if ($mismatch !== null) {
+                // This structured rejection is sent only after the key authenticated.
+                connect_manager::note_auth_accepted();
+                throw new \moodle_exception('error:siteurlmismatch', 'local_guardlms', '', (object) $mismatch);
+            }
+
             throw new \moodle_exception('error:pushhttp', 'local_guardlms', '', $httpcode, $response);
         }
 
         set_config('lastpush', time(), 'local_guardlms');
         set_config('lastpushstatus', $httpcode, 'local_guardlms');
+        connect_manager::clear_site_url_mismatch();
 
         // An accepted push proves the key is live again, whatever an earlier
         // run concluded.

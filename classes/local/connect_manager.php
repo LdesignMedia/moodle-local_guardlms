@@ -128,6 +128,7 @@ class connect_manager {
         // The fresh key clears whatever refusal the previous one collected;
         // reconnecting IS the recovery path that state points the admin at.
         unset_config('authrejectedat', 'local_guardlms');
+        self::clear_site_url_mismatch();
 
         // The exchange already carried the SDK key, so a site that connects
         // today never needs a second round trip to switch real-time monitoring
@@ -186,6 +187,7 @@ class connect_manager {
         // A site with no key has nothing to warn about, so the refused state
         // goes with it.
         unset_config('authrejectedat', 'local_guardlms');
+        self::clear_site_url_mismatch();
     }
 
     /**
@@ -196,6 +198,62 @@ class connect_manager {
     public static function is_connected(): bool {
         return trim((string) get_config('local_guardlms', 'apikey')) !== ''
             && (int) get_config('local_guardlms', 'connectedat') > 0;
+    }
+
+    /**
+     * Record a structured URL mismatch without changing the key or reporting URL.
+     *
+     * The server remains authoritative: a copied site must never silently adopt
+     * the URL belonging to a different installation.
+     *
+     * @param string $response JSON response from GuardLMS.
+     * @return array|null Mismatch details, or null for an unrelated/malformed error.
+     */
+    public static function note_site_url_mismatch(string $response): ?array {
+        $data = json_decode($response, true);
+        if (!is_array($data) || ($data['code'] ?? '') !== 'site_url_mismatch') {
+            return null;
+        }
+        foreach (['expected_siteurl', 'received_siteurl'] as $field) {
+            if (!isset($data[$field]) || !is_string($data[$field]) || trim($data[$field]) === '') {
+                return null;
+            }
+        }
+
+        $mismatch = [
+            'expected_siteurl' => $data['expected_siteurl'],
+            'received_siteurl' => $data['received_siteurl'],
+            'time' => time(),
+        ];
+        set_config('siteurlmismatch', json_encode($mismatch), 'local_guardlms');
+
+        return $mismatch;
+    }
+
+    /**
+     * Read the last inventory URL mismatch for the settings page.
+     *
+     * @return array|null Stored mismatch details, or null when none are recorded.
+     */
+    public static function site_url_mismatch(): ?array {
+        $data = json_decode((string) get_config('local_guardlms', 'siteurlmismatch'), true);
+        if (!is_array($data) || empty($data['time'])) {
+            return null;
+        }
+        foreach (['expected_siteurl', 'received_siteurl'] as $field) {
+            if (!isset($data[$field]) || !is_string($data[$field]) || trim($data[$field]) === '') {
+                return null;
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * Clear a mismatch after a successful push or a new connection lifecycle.
+     */
+    public static function clear_site_url_mismatch(): void {
+        unset_config('siteurlmismatch', 'local_guardlms');
     }
 
     /**

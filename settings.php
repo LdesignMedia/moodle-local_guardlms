@@ -52,6 +52,9 @@ if ($hassiteconfig) {
         // GuardLMS has refused that key, "Connected" is the single most
         // misleading thing this page can say, so the refused state wins.
         $rejected = $connected && \local_guardlms\local\connect_manager::is_auth_rejected();
+        // Legacy/manual keys can push without the connectedat metadata.
+        $urlmismatch = trim((string) get_config('local_guardlms', 'apikey')) !== ''
+            ? \local_guardlms\local\connect_manager::site_url_mismatch() : null;
 
         // The buttons trigger the endpoints directly; connect.php is a bare
         // redirect and disconnect.php a bare action. The status and both buttons
@@ -131,6 +134,9 @@ if ($hassiteconfig) {
         if ($rejected) {
             $statustext = get_string('connect:statusrejected', 'local_guardlms');
             $statusclass = 'local-guardlms-badge-rejected';
+        } else if ($urlmismatch !== null) {
+            $statustext = get_string('connect:statusurlmismatch', 'local_guardlms');
+            $statusclass = 'local-guardlms-badge-rejected';
         } else if ($connected) {
             $statustext = get_string('connect:statusconnected', 'local_guardlms');
             $statusclass = 'local-guardlms-badge-connected';
@@ -157,6 +163,23 @@ if ($hassiteconfig) {
             }
 
             $status .= html_writer::div($explain, 'alert alert-danger');
+        }
+
+        if ($urlmismatch !== null) {
+            $explain = html_writer::tag('p', get_string('error:siteurlmismatch', 'local_guardlms', (object) [
+                'expected_siteurl' => s($urlmismatch['expected_siteurl']),
+                'received_siteurl' => s($urlmismatch['received_siteurl']),
+            ]));
+            $explain .= html_writer::tag('p', get_string(
+                'connect:urlmismatchat',
+                'local_guardlms',
+                userdate((int) $urlmismatch['time'])
+            ));
+            $explain .= html_writer::link(
+                new moodle_url('/admin/settings.php', ['section' => 'local_guardlms', 'mode' => 'advanced']),
+                get_string('settings:advancedheading', 'local_guardlms')
+            );
+            $status .= html_writer::div($explain, 'alert alert-warning');
         }
 
         $details = [];

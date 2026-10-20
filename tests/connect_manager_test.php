@@ -138,12 +138,62 @@ final class connect_manager_test extends \advanced_testcase {
         set_config('connectstate', 'thestate', 'local_guardlms');
         set_config('connectstateexpires', time() + 600, 'local_guardlms');
         set_config('authrejectedat', 1754000000, 'local_guardlms');
+        connect_manager::note_site_url_mismatch(json_encode([
+            'code' => 'site_url_mismatch',
+            'expected_siteurl' => 'https://public.example.com',
+            'received_siteurl' => 'https://internal.example.com',
+        ]));
 
         $manager = new connect_manager($this->stub_client(['token' => '99|fresh-key']));
         $manager->complete_connect(str_repeat('c', 64), 'thestate');
         $this->assertDebuggingCalled();
 
         $this->assertFalse(connect_manager::is_auth_rejected());
+        $this->assertNull(connect_manager::site_url_mismatch());
+    }
+
+    /**
+     * A mismatch records diagnostic URLs without adopting another site's identity.
+     */
+    public function test_site_url_mismatch_keeps_credentials_and_explicit_override(): void {
+        $this->resetAfterTest();
+        set_config('apikey', '99|original-key', 'local_guardlms');
+        set_config('siteurloverride', 'https://clone.example.com', 'local_guardlms');
+
+        $mismatch = connect_manager::note_site_url_mismatch(json_encode([
+            'code' => 'site_url_mismatch',
+            'expected_siteurl' => 'https://production.example.com',
+            'received_siteurl' => 'https://clone.example.com',
+            'message' => 'Additional server text is not persisted.',
+        ]));
+
+        $this->assertSame('https://production.example.com', $mismatch['expected_siteurl']);
+        $this->assertSame('https://clone.example.com', $mismatch['received_siteurl']);
+        $this->assertGreaterThan(0, $mismatch['time']);
+        $this->assertCount(3, $mismatch);
+        $this->assertSame($mismatch, connect_manager::site_url_mismatch());
+        $this->assertSame('99|original-key', get_config('local_guardlms', 'apikey'));
+        $this->assertSame('https://clone.example.com', get_config('local_guardlms', 'siteurloverride'));
+        $this->assertFalse(connect_manager::is_auth_rejected());
+    }
+
+    /**
+     * Validation errors and malformed bodies must not invent a URL mismatch.
+     */
+    public function test_only_structured_site_url_mismatches_are_recorded(): void {
+        $this->resetAfterTest();
+        $responses = [
+            'not json',
+            json_encode(['message' => 'The site URL does not match.']),
+            json_encode(['code' => 'other_error', 'expected_siteurl' => 'a', 'received_siteurl' => 'b']),
+            json_encode(['code' => 'site_url_mismatch', 'expected_siteurl' => 'a']),
+            json_encode(['code' => 'site_url_mismatch', 'expected_siteurl' => [], 'received_siteurl' => 'b']),
+        ];
+        foreach ($responses as $response) {
+            $this->assertNull(connect_manager::note_site_url_mismatch($response));
+            $this->assertNull(connect_manager::site_url_mismatch());
+        }
+        $this->assertFalse(get_config('local_guardlms', 'siteurloverride'));
     }
 
     /**
@@ -199,10 +249,16 @@ final class connect_manager_test extends \advanced_testcase {
         set_config('connectedat', 1750000000, 'local_guardlms');
         set_config('authrejectedat', 1754000000, 'local_guardlms');
 
+        connect_manager::note_site_url_mismatch(json_encode([
+            'code' => 'site_url_mismatch',
+            'expected_siteurl' => 'https://public.example.com',
+            'received_siteurl' => 'https://internal.example.com',
+        ]));
         connect_manager::disconnect();
 
         $this->assertFalse(connect_manager::is_connected());
         $this->assertFalse(connect_manager::is_auth_rejected());
+        $this->assertNull(connect_manager::site_url_mismatch());
     }
 
     /**

@@ -99,6 +99,37 @@ final class sdk_client_test extends \advanced_testcase {
     }
 
     /**
+     * Every SDK key action uses the same explicit reporting URL as inventory.
+     */
+    public function test_sdk_actions_use_the_explicit_reporting_url(): void {
+        $this->resetAfterTest();
+        $this->set_up_connected();
+        set_config('siteurloverride', 'https://public.example.com/', 'local_guardlms');
+
+        foreach (['fetch', 'rotate', 'revoke'] as $action) {
+            $client = new testable_sdk_client(200, $this->success_body());
+            $this->assertTrue(sdk_client::resolve($action, 5, $client));
+            $this->assertSame('https://public.example.com', $client->calls[0]['siteurl']);
+        }
+    }
+
+    /**
+     * A browser SDK refresh does not prove a scheduled inventory push recovered.
+     */
+    public function test_sdk_refresh_preserves_an_inventory_url_mismatch(): void {
+        $this->resetAfterTest();
+        $this->set_up_connected();
+        $mismatch = connect_manager::note_site_url_mismatch(json_encode([
+            'code' => 'site_url_mismatch',
+            'expected_siteurl' => 'https://public.example.com',
+            'received_siteurl' => 'https://internal.example.com',
+        ]));
+
+        $this->assertTrue(sdk_client::resolve('fetch', 5, new testable_sdk_client(200, $this->success_body())));
+        $this->assertSame($mismatch, connect_manager::site_url_mismatch());
+    }
+
+    /**
      * A disconnected site makes no request and records no failure.
      *
      * Being disconnected is not a refresh failure, and reporting it as one

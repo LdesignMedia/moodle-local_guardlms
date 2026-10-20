@@ -41,6 +41,8 @@ $string['connect:reconnectbutton'] = 'Reconnect';
 $string['connect:reconnectinfo'] = 'Reconnecting issues a fresh push key for this site. Use it if pushes fail or the key is about to expire.';
 $string['connect:statuslabel'] = 'Status:';
 $string['connect:statusconnected'] = 'Connected';
+$string['connect:statusurlmismatch'] = 'Site URL mismatch';
+$string['connect:urlmismatchat'] = 'Last site URL mismatch: {$a}';
 $string['connect:statusdisconnected'] = 'Not connected';
 $string['connect:statusrejected'] = 'Reconnect required';
 $string['connect:rejectedexplain'] = 'GuardLMS no longer accepts this site\'s connection key. The key was revoked, or the website it belonged to was removed from the GuardLMS dashboard. This site has stopped reporting: use Reconnect below to issue a new key.';
@@ -109,6 +111,7 @@ $string['task:pushsiteinfo'] = 'Push site information to GuardLMS';
 // Errors.
 $string['error:pushfailed'] = 'The push to GuardLMS failed: {$a}';
 $string['error:pushhttp'] = 'GuardLMS rejected the push with HTTP status {$a}.';
+$string['error:siteurlmismatch'] = 'GuardLMS expects {$a->expected_siteurl}, but this push reported {$a->received_siteurl}. Check that Moodle uses the same site address in browser requests and scheduled tasks. For the same installation, correct Moodle\'s site address or set Site URL override in Advanced settings to the registered address. If this is a different or cloned site, reconnect it using its own address. Reconnecting alone will not fix different browser and scheduled-task addresses.';
 $string['error:pushrejected'] = 'GuardLMS no longer accepts this site\'s connection key (HTTP {$a}). The key was revoked, or the website it belonged to was removed from the GuardLMS dashboard. Reconnect this site from the GuardLMS settings page to issue a new key.';
 $string['error:notconfigured'] = 'GuardLMS is not connected yet. Use the Connect to GuardLMS button on the plugin settings page to set it up.';
 $string['error:connectstate'] = 'The connection attempt is invalid or has expired. Please start the connection again from the Connect to GuardLMS page.';

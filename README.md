@@ -337,6 +337,15 @@ address). The push key, the
 monitoring key and the verification token are never editable: the connect flow
 writes them.
 
+If an inventory push reports a site URL mismatch, the normal settings page shows
+both the registered address and the address sent by the failed push. Check
+Moodle's browser and CLI configuration: scheduled tasks must report the same
+address used to connect. The site URL override applies to inventory and SDK key
+requests, but does not rewrite actual page URLs in error reports. Use it only
+for another address of the same installation. A cloned site should connect
+under its own address; the plugin never adopts the registered address
+automatically. The warning clears after an accepted inventory push or reconnect.
+
 To pin the base URL for good (self-hosted GuardLMS, or a development instance),
 set it in `config.php` instead, which also makes it read-only in advanced mode:
 

@@ -56,6 +56,11 @@ final class push_site_info_task_test extends \advanced_testcase {
         set_config('enabled', 1, 'local_guardlms');
         set_config('apikey', 'push-key-from-connect', 'local_guardlms');
         unset_config('baseurl', 'local_guardlms');
+        \local_guardlms\local\connect_manager::note_site_url_mismatch(json_encode([
+            'code' => 'site_url_mismatch',
+            'expected_siteurl' => 'https://public.example.com',
+            'received_siteurl' => 'https://internal.example.com',
+        ]));
 
         \curl::mock_response(json_encode(['message' => 'ok']));
 
@@ -63,6 +68,7 @@ final class push_site_info_task_test extends \advanced_testcase {
 
         $this->assertStringContainsString('GuardLMS push succeeded (HTTP 200).', $output);
         $this->assertSame('200', get_config('local_guardlms', 'lastpushstatus'));
+        $this->assertNull(\local_guardlms\local\connect_manager::site_url_mismatch());
     }
 
     /**
