@@ -8,9 +8,12 @@ jobs:
     with:
       disable_behat: false
       min_php: '7.4'
+      # The shared 5.3 jobs currently require an unavailable snapshot image and
+      # use an incompatible MariaDB health check. Keep all older combinations
+      # and quality checks here; the source-based moodle53 job covers 5.3 below.
+      moodle_branches: 'MOODLE_401_STABLE MOODLE_405_STABLE MOODLE_501_STABLE MOODLE_502_STABLE'
 
-  # Keep the released 5.3 branch covered while the reusable workflow's matrix
-  # catches up; its main branch will move on to the next Moodle release.
+  # Test 5.3 from source independently of the shared workflow's snapshot images.
   moodle53:
     name: Moodle 5.3 / PHP ${{ matrix.php }} / ${{ matrix.database }}
     if: github.event_name == 'pull_request' || github.ref_protected

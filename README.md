@@ -361,15 +361,19 @@ Every push to `main` and every pull request runs the workflow in
 which wrap [moodle-plugin-ci](https://github.com/moodlehq/moodle-plugin-ci) and
 run the same checks the Moodle plugins directory applies on submission: PHP
 lint, code checker, PHPDoc checker, plugin validation, upgrade savepoints,
-Mustache lint, Grunt, PHPUnit and Behat. The matrix is derived from the
-`requires` line in `version.php` and the upstream workflow's available branch
-list. It tests multiple Moodle/PHP combinations with both PostgreSQL and
-MariaDB; the PHPCompatibility check runs at PHP 7.4.
+Mustache lint, Grunt, PHPUnit and Behat. The shared matrix explicitly selects
+Moodle 4.1, 4.5, 5.1 and 5.2 from the upstream workflow's available combinations.
+These branches have working
+snapshot images; the highest selected branch also runs the shared quality
+checks. It tests multiple Moodle/PHP combinations with both PostgreSQL and
+MariaDB; the PHPCompatibility check runs at PHP 7.4. Keep this explicit list
+until the shared workflow's Moodle 5.3 snapshot images and MariaDB health
+check are working.
 
 An additional job explicitly tests `MOODLE_503_STABLE` on PHP 8.3 and 8.4
 with MariaDB 11.4 and PostgreSQL 17, including PHPUnit and the plugin's Chrome
-Behat scenarios. This keeps Moodle 5.3 covered independently of updates to the
-shared workflow's version matrix.
+Behat scenarios. It installs Moodle from source and uses MariaDB's supported
+health check, keeping Moodle 5.3 covered without the duplicate shared jobs.
 
 ### Moodle 5.3 compatibility (1.9.1)
 
