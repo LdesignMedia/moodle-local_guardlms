@@ -71,6 +71,7 @@ and the [inventory reference](docs/inventory.md) for the configuration payload.
 - [Browser monitoring, analytics and server errors](docs/monitoring.md)
 - [Inventory, security checks and payload reference](docs/inventory.md)
 - [Development, tests and compatibility](docs/development.md)
+- [Releasing to Moodle Marketplace](docs/releases.md)
 
 ## Support and license
 
