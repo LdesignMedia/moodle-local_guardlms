@@ -4,585 +4,77 @@
   </a>
 </p>
 
-# GuardLMS (local_guardlms)
+# GuardLMS for Moodle
 
 [![CI](https://github.com/LdesignMedia/moodle-local_guardlms/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/LdesignMedia/moodle-local_guardlms/actions/workflows/ci.yml)
 
-Continuous security monitoring for your Moodle site, connected in one click.
+Connect your Moodle site to [GuardLMS](https://guardlms.com) for vulnerability
+alerts, update reminders and security configuration checks.
 
-This local plugin links a Moodle site to [GuardLMS](https://guardlms.com). Once
-connected, the plugin reports the Moodle version, the installed plugin
-inventory, available updates and the server environment to GuardLMS once a day,
-and can load the GuardLMS real-time monitoring script so JavaScript errors on
-your site are reported as they happen. GuardLMS turns that data into CVE
-alerts, update reminders, configuration reviews and error reports.
+The plugin reports your software inventory once a day. Optional error monitoring
+helps you investigate browser and server problems from the GuardLMS dashboard.
 
-A free GuardLMS account is enough to get started.
+## Features
 
-## What the plugin does
-
-- **One-click connect.** Click **Connect to GuardLMS** on the settings page,
-  log in or register, confirm. The site is registered, ownership is verified
-  through a meta tag the plugin serves, and a site-bound push key is installed.
-  No API keys to copy, no web services, tokens or service users.
-- **Daily inventory push.** A scheduled task sends the Moodle release and
-  version, every installed plugin with its version and enabled state, the
-  updates Moodle reports as available, the operating system, webserver and PHP
-  configuration to GuardLMS over HTTPS.
-- **Real-time JavaScript error monitoring.** With one checkbox the plugin
-  loads the GuardLMS SDK on every page and reports browser errors with stack
-  traces and context. No learner names, email addresses or
-  user IDs are sent, and clicks and form entries are never recorded.
-- **Optional page analytics.** On plans that include analytics, the same script
-  can also send anonymous page views and scroll depth.
-- **Configuration review.** A fixed list
-  of security and session settings (cookie flags, session timeout, password
-  policy, lockout threshold, self registration, and similar) is included so
-  GuardLMS can review how the site is hardened. Secrets are never sent.
-- **Clear connection status.** The settings page shows whether the site is
-  connected, when it last pushed, when the key expires and whether GuardLMS
-  has stopped accepting the key, so a silent site is never mistaken for a
-  healthy one.
-
-## What GuardLMS unlocks
-
-The plugin is the sensor. GuardLMS is where the data becomes useful.
-
-- **CVE matching.** Every plugin and the Moodle core version are matched
-  against known vulnerabilities, with NVD integration, so a vulnerable
-  component is flagged the day it becomes known.
-- **Outdated component alerts.** Available updates for Moodle core and every
-  plugin, taken from Moodle's own update checker, with alerts when something
-  falls behind.
-- **Environment intelligence.** PHP version, extensions, operating system,
-  webserver and session store are tracked over time and matched against known
-  vulnerabilities alongside the Moodle inventory.
-- **Configuration review.** GuardLMS checks the reported settings against
-  hardening best practices.
-- **JavaScript error tracking.** Grouped errors with full stack traces,
-  breadcrumbs of preceding navigation, network requests and console output,
-  browser and device context, and rate limiting so a broken page does not
-  flood you.
-- **Everything else GuardLMS monitors** for the same site: uptime and SSL
-  certificates, DNS and email security, security headers and cookie settings,
-  performance, technology stack detection, health scores, automated security
-  reports, and multi-tenant management for agencies and IT partners.
-
-See the full [feature overview](https://guardlms.com/features) and
-[plans](https://guardlms.com/pricing).
-
-## Installation
-
-1. Copy the plugin to `local/guardlms` in your Moodle root (Moodle 3.9–5.0),
-   or `public/local/guardlms` (Moodle 5.1 and later), or install it from
-   Site administration > Plugins > Install plugins.
-2. Visit Site administration to run the upgrade.
-
-## Connect to GuardLMS
-
-1. Open Site administration > Plugins > Local plugins > GuardLMS.
-2. New to GuardLMS? Choose **Create a free account** in the welcome banner.
-   Registration opens in a new tab, so you can return to Moodle when ready.
-   If you already have an account, skip this step.
-3. Click **Connect**. Your browser is sent to GuardLMS where you log
-   in or create a free account and confirm the connection.
-4. Done. The site is registered in GuardLMS, site ownership is verified
-   automatically, the push key is installed, and the first inventory push is
-   queued.
-
-Use **Open dashboard** in the banner whenever you want to review your site in
-GuardLMS. Both links use the configured GuardLMS base URL, including staging or
-self-hosted instances. Opening the banner links does not start a connection.
-
-The daily push runs from Moodle cron. You can also run it on demand from Site
-administration > Server > Scheduled tasks ("Push site information to
-GuardLMS"). If pushes ever fail or the push key is about to expire, open the
-settings page and click **Reconnect**. **Disconnect** removes the key and stops
-reporting.
-
-### Connection status
-
-The settings page shows one of three states:
-
-| Status | Meaning |
-| --- | --- |
-| **Connected** | The push key works. Pushes are being accepted. |
-| **Reconnect required** | GuardLMS refused this site's key (HTTP 401 or 403). The key was revoked, or the website it belonged to was removed from the GuardLMS dashboard. The site has stopped reporting; click **Reconnect** to issue a new key. |
-| **Not connected** | No key is installed. |
-
-"Reconnect required" also names the date of the first refused push, so it is
-clear since when the site stopped reporting. The plugin never deletes the key on
-its own: a GuardLMS outage that answers 401 for a while resolves itself, and the
-state clears as soon as a push is accepted again.
-
-## Real-time monitoring
-
-Real-time monitoring needs a connected site. On Moodle 4.4 and later the
-script is injected through the Hooks API (`db/hooks.php`); on Moodle 3.9 to
-4.3 the legacy `before_standard_html_head` callback in `lib.php` does the same
-job. The output and its position in the page head are identical on both paths.
-
-### How it works
-
-1. Connect the site. The plugin fetches its monitoring key and the SDK
-   settings (script URL, endpoints, sample rates, ignored errors, allowed
-   domains) from GuardLMS and caches them in plugin config.
-2. Tick **Enable real-time monitoring** on the settings page and save.
-3. From then on the GuardLMS SDK is loaded on every page. Browser errors are
-   sent to GuardLMS in batches with the error message, script and line, stack
-   trace, and a short trail of preceding page loads, network requests and
-   console messages.
-
-The SDK settings are refreshed from GuardLMS when the site connects, when the
-plugin is upgraded, when the settings page is saved (through an ad hoc task on
-cron) and when the settings page is opened after a while, so changes made in
-the dashboard (sample rate, ignored errors, allowed domains, switching
-monitoring off) reach the site without touching Moodle. The settings page also
-has a **Refresh now** button and a **Send a test error** button to confirm the
-pipeline end to end.
-
-### Page analytics
-
-**Enable page analytics** adds anonymous page views and scroll depth on top of
-error reporting. It requires a GuardLMS plan that includes analytics; on other
-plans the checkbox is disabled and error monitoring keeps working.
-
-### What is and is not sent
-
-- Sent: the page URL and referrer, the browser, operating system and window
-  size, an anonymous session identifier that groups errors from one browsing
-  session, and the error details listed above.
-- Never sent: Moodle user IDs, names, email addresses, clicks, keystrokes or
-  form entries.
-- Scrubbed before sending: values of `sesskey`, `token`, `password`, `secret`,
-  `apiKey`, `authorization` and `nonce` in URLs, stack traces and breadcrumbs.
-- Dropped: known browser noise such as "Script error." and ResizeObserver
-  warnings, plus whatever you add to the ignore list in the dashboard. Reports
-  are also rate limited per minute.
-- The anonymous session identifier is not the Moodle user ID and cannot be
-  traced back to an account by GuardLMS.
-
-The privacy provider describes the same data for the Moodle privacy API.
-
-### Status messages
-
-The real-time section on the settings page tells you why monitoring is or is
-not active: not connected yet, key not fetched yet, ready to switch on, active,
-no active subscription, switched off in the dashboard, domain mismatch between
-the site URL and the allowed domains in GuardLMS, analytics not in your plan,
-or the last refresh error.
-
-## Daily inventory
-
-The scheduled task builds a typed payload and sends it to the GuardLMS
-endpoint, authenticated with the site's push key:
-
-- `moodle`: release, version number, branch, every installed plugin as its
-  frankenstyle component name, version, release, display name, standard/third
-  party flag, enabled state, public URL path below the
-  site root (for example `/mod/quiz`), plus the updates Moodle itself reports
-  as available for each of them
-- `server`: operating system family, distribution and release,
-  webserver name and version, and the session handler in use
-- `php`: PHP version, SAPI, memory limit, max execution time,
-  upload and post size limits, timezone and the loaded extensions
-- `config`: the settings an auditor reads under
-  Site administration > Security (site security, HTTP security,
-  notifications), plus session, authentication, web service, debugging and
-  update settings. The full key list is `collector::CONFIG_KEYS`. Secrets are
-  never sent: the cron password, reCAPTCHA keys, IP allow/block lists and
-  site policy are reported only as set/not-set flags (`cronremotepasswordset`,
-  `recaptchaconfigured`, `allowedipset`, `blockedipset`, `sitepolicyset`)
-- `securitychecks`: recognised checks from Site
-  administration > Reports > Security, with fixed `ref`, `component`, `name`
-  and `status` (`ok`, `info`, `warning`, `error`, `critical`, `na` or `unknown`).
-  `summary` and `details` are always empty; unknown plugin checks are withheld.
-- `security_config.hardening`: versioned aggregate
-  observations; see Private hardening inventory below.
-
-Plugin versions are reported with the raw values exactly as Moodle records them,
-because GuardLMS matches CVEs on the component name and version.
-
-### Available updates
-
-Update information comes from Moodle's own update checker, so it is the same
-list an admin sees under Site administration > Plugins > Plugins overview,
-never a guess made by comparing version strings elsewhere.
-
-That checker only reads the response cached by its last fetch. On a site whose
-cron is broken, or where automatic checking is switched off, the cache is empty
-or months old, and reporting it as-is would tell GuardLMS "no updates" when the
-truth is "nobody looked". So the daily task refreshes the data itself whenever
-the cache is older than 24 hours, and reports honestly when it cannot:
-
-- `moodle.updatecheck` describes the state of the check: whether it is
-  `enabled`, when it was `lastfetched`, whether the data is `stale`, and any
-  `fetcherror` from the refresh attempt.
-- Each plugin's `updates` key is **absent** when the data is stale, meaning
-  "nobody checked", and **present but empty** when the plugin was checked and
-  is current. GuardLMS relies on that distinction so an unchecked plugin is
-  never displayed as up to date.
-- `moodle.coreupdates` carries the same information for Moodle core, which the
-  per-plugin API does not cover.
-
-The refresh only happens on cron paths. The push that runs while an admin is
-connecting the site stays on cached data, so the connect screen never blocks on
-a request to download.moodle.org.
-
-### Example payload
-
-```json
-{
-  "platform": "moodle",
-  "siteurl": "https://lms.example.com",
-  "generatedtime": 1781308800,
-  "moodle": {
-    "release": "4.5.3+ (Build: 20250101)",
-    "version": "2024100700.05",
-    "branch": "405",
-    "plugincount": 2,
-    "plugins": [
-      {
-        "component": "mod_quiz",
-        "type": "mod",
-        "name": "quiz",
-        "version": "2024100700",
-        "versiondisk": "2024100700",
-        "release": "4.5.3",
-        "displayname": "Quiz",
-        "isstandard": true,
-        "enabled": 1,
-        "relativepath": "/mod/quiz",
-        "updates": []
-      },
-      {
-        "component": "local_guardlms",
-        "type": "local",
-        "name": "guardlms",
-        "version": "2026061900",
-        "versiondisk": "2026061900",
-        "release": "1.1.0",
-        "displayname": "GuardLMS",
-        "isstandard": false,
-        "enabled": -1,
-        "relativepath": "/local/guardlms",
-        "updates": [
-          {
-            "version": "2026073100",
-            "release": "1.5.0",
-            "maturity": 200,
-            "url": "https://moodle.org/plugins/local_guardlms"
-          }
-        ]
-      }
-    ],
-    "updatecheck": {
-      "enabled": true,
-      "lastfetched": 1781305200,
-      "stale": false,
-      "fetcherror": null
-    },
-    "coreupdates": []
-  },
-  "server": {
-    "os_family": "Linux",
-    "os": "Linux",
-    "webserver": "Apache/2.4.58"
-  },
-  "php": {
-    "version": "8.2.0",
-    "sapi": "fpm-fcgi",
-    "memory_limit": "512M",
-    "max_execution_time": "30",
-    "upload_max_filesize": "100M",
-    "post_max_size": "100M",
-    "timezone": "Europe/Amsterdam",
-    "extensions": ["Core", "curl", "json", "..."]
-  },
-  "config": {
-    "cookiesecure": "1",
-    "passwordpolicy": "1",
-    "minpasswordlength": "8",
-    "debugdisplay": "0",
-    "cronremotepasswordset": "1",
-    "...": "..."
-  },
-  "securitychecks": [
-    {
-      "ref": "core_passwordpolicy",
-      "component": "core",
-      "name": "Password policy",
-      "status": "ok",
-      "summary": "",
-      "details": ""
-    }
-  ]
-}
-```
-
-## Advanced settings (support and self-hosted only)
-
-The settings page shows the Connect button, the connection status and the
-real-time monitoring section, nothing else. The connection internals are hidden
-so nobody can break a working setup by editing them. They are still reachable
-by URL:
-
-```
-/admin/settings.php?section=local_guardlms&mode=advanced
-```
-
-That page exposes the GuardLMS base URL, the push path, the daily-push toggle
-and an optional site URL override (for sites GuardLMS knows under a different
-address). The push key, the
-monitoring key and the verification token are never editable: the connect flow
-writes them.
-
-If an inventory push reports a site URL mismatch, the normal settings page shows
-both the registered address and the address sent by the failed push. Check
-Moodle's browser and CLI configuration: scheduled tasks must report the same
-address used to connect. The site URL override applies to inventory and SDK key
-requests, but does not rewrite actual page URLs in error reports. Use it only
-for another address of the same installation. A cloned site should connect
-under its own address; the plugin never adopts the registered address
-automatically. The warning clears after an accepted inventory push or reconnect.
-
-To pin the base URL for good (self-hosted GuardLMS, or a development instance),
-set it in `config.php` instead, which also makes it read-only in advanced mode:
-
-```php
-$CFG->forced_plugin_settings['local_guardlms']['baseurl'] = 'https://guardlms.example.com';
-```
-
-## Continuous integration
-
-Every push to `main` and every pull request runs the workflow in
-`.github/workflows/ci.yml`. It reuses the
-[Catalyst Moodle workflows](https://github.com/catalyst/catalyst-moodle-workflows),
-which wrap [moodle-plugin-ci](https://github.com/moodlehq/moodle-plugin-ci) and
-run the same checks the Moodle plugins directory applies on submission: PHP
-lint, code checker, PHPDoc checker, plugin validation, upgrade savepoints,
-Mustache lint, Grunt, PHPUnit and Behat. The shared matrix explicitly selects
-Moodle 4.1, 4.5, 5.1 and 5.2 from the upstream workflow's available combinations.
-These branches have working
-snapshot images; the highest selected branch also runs the shared quality
-checks. It tests multiple Moodle/PHP combinations with both PostgreSQL and
-MariaDB; the PHPCompatibility check runs at PHP 7.4. Keep this explicit list
-until the shared workflow's Moodle 5.3 snapshot images and MariaDB health
-check are working.
-
-An additional job explicitly tests `MOODLE_503_STABLE` on PHP 8.3 and 8.4
-with MariaDB 11.4 and PostgreSQL 17, including PHPUnit and the plugin's Chrome
-Behat scenarios. It installs Moodle from source and uses MariaDB's supported
-health check, keeping Moodle 5.3 covered without the duplicate shared jobs.
-
-### Moodle 5.3 compatibility (1.9.1)
-
-On 5 October 2026, the plugin was tested on Moodle **5.3.0** (tag `v5.3.0`,
-core commit `42622298fe06f9626d988d60b2bf589bd8f850e8`), PHP **8.4.25** and
-MariaDB **11.4.7** at `moodle53.webvs.nl`, connected to GuardLMS staging:
-
-- Fresh installation of 1.9.0 and upgrade to **1.9.1** (`2026100500`).
-- One-time connect-code exchange and initial inventory delivery (HTTP 200),
-  followed by the actual scheduled inventory task (HTTP 200).
-- The stored staging snapshot contains Moodle 5.3, connector 1.9.1 and all
-  412 installed plugins, plus the encrypted synthetic security-probe descriptor.
-- Admin login and the connected settings page render successfully, including
-  browser monitoring and PHP/SQL error opt-in controls. Requests without the
-  required probe credential or refresh sesskey are refused.
-- With browser monitoring temporarily enabled, the Moodle 5.3 head hook emits
-  exactly one SDK initialization and one ownership verification tag.
-- PHPUnit: **164 tests, 3,436 assertions, no failures**, using an isolated
-  database. PHPUnit 11 reports 15 existing metadata deprecations.
-- PHP lint: all 48 PHP files pass. Moodle CodeSniffer passes for the changed
-  PHP files, and all four upgrade savepoints validate.
-
-The staging exchange used the existing test website and a server-issued test
-code; it did not exercise the dashboard consent screen in a browser. The
-environment's public hostname remains protected by Cloudflare Access; HTTP
-smoke checks used its loopback origin with the public host header.
-
-To repeat the plugin suite in an initialized Moodle PHPUnit environment:
-
-```bash
-php vendor/bin/phpunit --testsuite local_guardlms_testsuite
-```
-
-Run the same checks locally before opening a pull request:
-
-```bash
-composer create-project -n --no-dev --prefer-dist moodlehq/moodle-plugin-ci ci ^4
-export PATH="$(pwd)/ci/bin:$(pwd)/ci/vendor/bin:$PATH"
-moodle-plugin-ci install --plugin ./moodle-local_guardlms --db-host=127.0.0.1
-moodle-plugin-ci phplint && moodle-plugin-ci phpcs --max-warnings 0 && moodle-plugin-ci phpunit
-```
+- Daily Moodle and plugin inventory for vulnerability and update monitoring.
+- Security configuration checks, including MFA, reCAPTCHA and Mobile API settings.
+- Optional JavaScript, PHP and SQL error reporting.
+- Optional page views and scroll-depth analytics on supported plans.
+- One-click connection with clear status and reconnect controls.
 
 ## Requirements
 
-- Moodle 3.9 or later, PHP 7.4 or later. Every feature, including real-time
-  monitoring, works on all supported versions.
-- Moodle 5.3 requires PHP 8.3 or 8.4; the PHP 7.4 minimum applies to older
-  Moodle versions. Follow the requirements of your Moodle release.
-- Outbound HTTPS from the Moodle server to GuardLMS for the push, and from
-  learners' browsers to GuardLMS when real-time monitoring is enabled.
+- Moodle **3.9+** and PHP **7.4+**, using a PHP version supported by your Moodle release.
+- A GuardLMS account, outbound HTTPS access and working Moodle cron.
+- Individual checks depend on the features available in your Moodle version.
 
-## Links
+## Install and connect
 
-- [GuardLMS](https://guardlms.com)
-- [Moodle plugins directory](https://moodle.org/plugins/local_guardlms)
-- [Issues](https://github.com/LdesignMedia/moodle-local_guardlms/issues)
+1. Install from the [Moodle plugins directory](https://moodle.org/plugins/local_guardlms)
+   or through **Site administration → Plugins → Install plugins**.
+2. Visit **Site administration** to complete the installation or upgrade.
+3. Open **Plugins → Local plugins → GuardLMS**.
+4. Click **Connect**, sign in to GuardLMS and confirm the connection.
+5. Use **Open dashboard** to view your site's results.
 
-## License
+For manual installation, place the plugin in `local/guardlms` on Moodle 3.9–5.0,
+or `public/local/guardlms` on Moodle 5.1 and later.
 
-GNU GPL v3 or later. See the [LICENSE](LICENSE) file for the full license text.
+Inventory is sent daily by cron. To send it now, run **Push site information to
+GuardLMS** under **Server → Scheduled tasks**. If the plugin asks you to reconnect,
+use **Reconnect** on its settings page.
 
-### Private hardening inventory (1.7.0)
+## Optional monitoring
 
-The inventory includes a versioned
-`security_config.hardening` block. It reports fixed booleans and aggregate counts:
-web plugin installation policy, token expiry/restrictions, guest/self enrolment
-instances, scheduled/ad hoc task retries, MFA configuration and ClamAV configuration.
-Every section has an observation time and `observed`, `unsupported` or `failed`
-status. An unavailable observation contains no metrics; it is never a zero/pass.
+Enable only the features you need in the plugin settings:
 
-No user names, emails, user IDs, token values, enrolment keys, course names,
-Per-user IP restriction lists, antivirus connection addresses, absolute filesystem paths,
-SQL or exception text are included in these observations. Native security checks
-export only allowlisted identifiers, fixed labels and verdicts. Their rendered
-summaries/details and unrecognised third-party checks remain local. Inventory
-also omits server hostname, code root, plugin absolute paths and PHP ini path.
-The site URL and public component-relative URL paths remain necessary inventory
-identifiers. Login-notification recipients and internal cURL host lists are
-reduced to presence flags.
+- **Enable real-time monitoring** — JavaScript errors from the browser.
+- **Enable page analytics** — page views and scroll depth; requires an eligible plan.
+- **Report PHP and SQL errors** — server errors; separate opt-in, off by default.
 
-The observations describe configuration, not proof of exploitation or end-to-end
-protection. MFA at an external identity provider, antivirus operation, external
-backups and restore success are not established. A stopped push task cannot
-report its own outage. GuardLMS must consider the last accepted push separately;
-these are scheduled snapshots, not realtime monitoring.
+Monitoring requires a connected site and active GuardLMS monitoring.
+See [monitoring setup and data sharing](docs/monitoring.md) for details.
 
-This contract covers the server-side inventory. Optional browser monitoring is
-a separate feature with its own privacy declaration (page URLs, browser/session
-telemetry and errors); disable it if that transfer is not appropriate.
+## Privacy
 
+The inventory reports software, environment and selected configuration metadata.
+Account records, passwords, reCAPTCHA keys and configured IP lists stay in Moodle.
 
-### Moodle MFA, reCAPTCHA and Mobile API observations (1.10.0)
+Optional browser monitoring sends page URLs and diagnostic context. PHP/SQL error
+reporting can also send redacted SQL and request parameters. Review the
+[monitoring privacy details](docs/monitoring.md) before enabling these features,
+and the [inventory reference](docs/inventory.md) for the configuration payload.
 
-Deploy the GuardLMS API support for issue #2776 before this connector: the
-receiver validates the version-1 hardening block with a closed schema. The new
-`recaptcha` and `mobile_api` groups remain version 1 and retain the existing
-`status`/`observed_at` envelope.
+## Documentation
 
-- `mfa` adds `configuration_complete`, `manual_admins_present` and, when provable,
-  `manual_admins_mfa_required`. Active manual-authentication site administrators
-  and users with `moodle/site:config` at system context are checked locally.
-  Only the resulting booleans are sent. No user factor enrolments, identities,
-  user counts, secrets, sessions or IP addresses are exported or changed. A disabled
-  MFA policy or a known static factor combination reaching 100 points without a
-  challenge produces a negative enforcement verdict. Conditional factors and
-  custom factors remain unknown when a safe conclusion is unavailable.
-  Configuration completeness checks supported input factors and the 100-point
-  threshold; it does not prove provider operation or user enrolment.
-- `recaptcha` adds `keys_configured`, `self_registration_enabled` (active email
-  self-registration with account creation allowed), `signup_enabled` (the
-  auth_email switch) and `login_enabled` on Moodle versions exposing that switch.
-  Both keys are reduced to presence booleans; no Google request, account details
-  or key material is sent. The administrator must test key validity and domain
-  registration locally.
-- `mobile_api.enabled` means the mobile setting, global web services, REST
-  protocol and official `moodle_mobile_app` service are all enabled. It does not
-  establish whether anyone uses the mobile app. GuardLMS recommends disabling
-  the API only if the site does not need the app.
+- [Connection, troubleshooting and advanced settings](docs/advanced-settings.md)
+- [Browser monitoring, analytics and server errors](docs/monitoring.md)
+- [Inventory, security checks and payload reference](docs/inventory.md)
+- [Development, tests and compatibility](docs/development.md)
 
-A representative receiver contract is in
-[`tests/fixtures/moodle-configuration-observations.json`](tests/fixtures/moodle-configuration-observations.json).
+## Support and license
 
-Missing verdicts mean unknown. Check observation time and push again after
-configuration changes; these are scheduled configuration snapshots.
+Report problems through [GitHub issues](https://github.com/LdesignMedia/moodle-local_guardlms/issues).
+Learn more at [guardlms.com](https://guardlms.com).
 
-### Offline SSRF policy and filesystem checks
-
-The hardening block now includes `ssrf` and `filesystem`. Configured cURL
-IP addresses, CIDRs and hostnames remain local; only the number of omitted rules
-and fixed sample verdicts are exported. Moodle's own IP-rule
-parser checks fixed metadata, loopback, private IPv4 and local IPv6 samples.
-This detects gaps in nonempty lists without performing HTTP requests, DNS
-lookups, metadata reads or exploitation. Passing samples do not establish full
-subnet coverage or protection against redirects/DNS rebinding. URL downloader
-state and broad port allowances provide context.
-
-Filesystem checks inspect effective permissions of the collecting PHP process,
-including the public directory and sampled code/config files, and whether
-moodledata is inside the public directory. CLI and web contexts are separate;
-cron results do not establish web-user permissions. The checks do not create
-files or export absolute paths, owners or file contents. The receiver must
-support these new sections before this connector is deployed.
-
-## Server errors (opt-in)
-
-Enable **Report PHP and SQL errors** in the plugin settings. This is independent
-of the browser SDK checkbox and defaults to off. A connected site, valid SDK key
-and active GuardLMS monitoring are required. Deploy GuardLMS with PHP/SQL ingest
-support and run both the GuardLMS migration and Moodle plugin upgrade first.
-
-To enforce the setting in `config.php` (before loading `lib/setup.php`):
-
-```php
-$CFG->forced_plugin_settings['local_guardlms']['servererrorsenabled'] = true;
-```
-
-Set it to `false` to enforce an opt-out. When enabled and connected, the plugin
-forces `$CFG->dboptions['logerrors'] = true` and updates the active database
-connection's copied option. The native option is **logerrors**, despite the
-singular `logerror` in some config examples. Existing `logslow` and other options
-are preserved. No config.php file is rewritten; overrides last for the request.
-
-Uncaught PHP exceptions (including SQL failures) are reported through a chained
-exception handler. PHP warnings and fatal errors are sent at request shutdown.
-Committed native SQL error logs, including caught SQL failures, are also sent at
-shutdown; a task retries up to 50 pending SQL logs each minute. Delivery receipts
-avoid replay across concurrent requests and preserve late-committing logs.
-An uncaught SQL exception with a matching committed native log is sent only via
-that log. Transactional exceptions are sent directly before core rolls back.
-
-Reports appear under **PHP** and **SQL** in the existing realtime error overview.
-Stack traces omit function arguments, and raw exception debuginfo is never
-transmitted. SQL errors do carry the executed statement and bound parameters as
-`sqlQuery`/`sqlParams` (parsed from debuginfo when debugging is on, otherwise from
-the native SQL log), plus the full request URL with query string, the request
-method and GET/POST parameters (`requestMethod`/`requestQuery`/`requestPost`), so
-the failing request is reproducible from the dashboard. Sensitive parameter names
-(`sesskey`, passwords, tokens, API keys) are masked by name, and password hashes
-and emails are redacted before sending.
-Moodle's native `log_queries` table **does** store SQL text and parameters locally;
-its retention and cleanup remain the site administrator’s responsibility. Plugin delivery receipts store log IDs only.
-Native SQL logs contain no request URL or handled flag, so their reports use the
-site root and the context “Moodle SQL error log”.
-
-Coverage starts after Moodle configuration. Exceptions caught and consumed by
-application code are not visible to PHP's global exception handler; caught SQL
-failures are available only if their native logs survive transaction rollback.
-The standard Moodle AJAX dispatcher is also observed: its error response is
-forwarded unchanged, even when it catches the exception internally. AJAX reports
-include a stack trace only when Moodle includes one in the response; this feature
-does not enable debug output. Core error pages which invoke the default handler
-directly are observed during head rendering. Other custom replacement handlers
-(for example cron or third-party web-service handlers) must cooperate. PHP delivery is best-effort
-with a 1.5-second HTTP timeout; SQL delivery is retried while native logs remain.
-A hard process kill or out-of-memory failure may prevent shutdown reporting.
-
-The AJAX observer is restricted to core `lib/ajax/service.php` and
-`service-nologin.php`, buffers at most 1 MiB and sends at most 20 exceptions per
-response. Successful response data and request arguments are never transmitted.
-A caught SQL failure surfaced by AJAX may also produce a separate native SQL-log
-report, because core does not expose a correlation ID or (in production) a trace.
-
-
-### Synthetic external security probes
-
-The inventory now includes a short-lived `external_probe` descriptor for GuardLMS.
-It authorizes access only to a synthetic marker file and a synthetic cache-test
-page; it is not a Moodle user credential. The scanner uses these resources to
-check anonymous file access and shared-cache isolation without requesting user
-records. The endpoints reject missing, incorrect and expired probe credentials.
-The backend must support encrypted probe ingestion before these checks run.
-The marker file is replaced on credential rotation rather than accumulated.
+Licensed under [GNU GPL v3 or later](LICENSE).
