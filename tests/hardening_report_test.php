@@ -199,8 +199,9 @@ final class hardening_report_test extends \advanced_testcase {
         $report = hardening_report::collect()['ssrf'];
         $this->assertSame('observed', $report['status']);
         $this->assertFalse($report['metadata_ip_blocked']);
-        $this->assertSame(['127.0.0.0/8'], $report['blocked_ip_rules']);
-        $this->assertSame(2, $report['omitted_rule_count']);
+        $this->assertArrayNotHasKey('blocked_ip_rules', $report);
+        $this->assertStringNotContainsString('127.0.0.0/8', json_encode($report));
+        $this->assertSame(3, $report['omitted_rule_count']);
         $this->assertFalse($report['non_http_ports_allowed']);
         $this->assertStringNotContainsString('private-name', json_encode($report));
         $this->assertStringNotContainsString('secret=', json_encode($report));

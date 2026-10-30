@@ -56,22 +56,8 @@ class outbound_policy_report extends \core\files\curl_security_helper {
         if (count($validports) === count($ports)) {
             $result['non_http_ports_allowed'] = !$ports || (bool) array_diff(array_map('intval', $ports), [80, 443]);
         }
-        $result['blocked_ip_rules'] = [];
-        $result['omitted_rule_count'] = 0;
-        foreach ($this->get_blocked_hosts() as $rule) {
-            // IP addresses and CIDRs are explicitly permitted telemetry. Keep names/other strings local.
-            $parts = explode('/', $rule);
-            $valid = filter_var($parts[0], FILTER_VALIDATE_IP) !== false;
-            if (count($parts) > 1) {
-                $max = strpos($parts[0], ':') === false ? 32 : 128;
-                $valid = $valid && count($parts) === 2 && ctype_digit($parts[1]) && (int) $parts[1] <= $max;
-            }
-            if ($valid && count($result['blocked_ip_rules']) < 200) {
-                $result['blocked_ip_rules'][] = $rule;
-            } else {
-                $result['omitted_rule_count']++;
-            }
-        }
+        // Configured addresses and hostnames remain local; only fixed sample verdicts are exported.
+        $result['omitted_rule_count'] = count($this->get_blocked_hosts());
         return $result;
     }
 }

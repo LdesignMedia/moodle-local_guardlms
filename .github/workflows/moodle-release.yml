@@ -1,0 +1,91 @@
+name: Release to Moodle Marketplace
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing release tag, for example v1.10.0'
+        required: true
+        type: string
+      release_notes:
+        description: 'Optional release notes; otherwise use the GitHub Release body'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: moodle-marketplace-${{ github.event.release.tag_name || inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate release from main
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - name: Validate tag name
+        id: tag
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          if [[ ! "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[A-Za-z0-9]+([.-][A-Za-z0-9]+)*)?$ ]]; then
+            echo "::error::Use a tag such as v1.10.0 or v1.10.0-rc.1."
+            exit 1
+          fi
+          printf 'tag=%s\n' "$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+      - name: Check out the candidate release tag
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: refs/tags/${{ steps.tag.outputs.tag }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify release version and main ancestry
+        env:
+          RELEASE_TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          if git show-ref --verify --quiet "refs/remotes/origin/$RELEASE_TAG"; then
+            echo "::error::A branch has the same name as this tag; the publisher requires an unambiguous tag."
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor HEAD origin/main; then
+            echo "::error::The tagged commit must be merged into main before release."
+            exit 1
+          fi
+          if ! grep -Fxq "\$plugin->release = '${RELEASE_TAG#v}';" version.php; then
+            echo "::error::The tag must match the release declared in version.php."
+            exit 1
+          fi
+      - name: Verify successful main CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha=$(git rev-parse HEAD)
+          result=$(gh api --method GET "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs" \
+            -f head_sha="$sha" -f event=push -f branch=main -f per_page=100 \
+            --jq "[.workflow_runs[] | select(.head_sha == \"$sha\" and .head_branch == \"main\" and .event == \"push\")] | sort_by([.updated_at, .id, .run_attempt]) | last | [.status, .conclusion] | join(\":\")")
+          if [[ "$result" != "completed:success" ]]; then
+            echo "::error::Wait for this commit's latest main CI to pass, then retry this release workflow manually."
+            exit 1
+          fi
+
+  submit:
+    name: Submit version to Moodle Marketplace
+    needs: validate
+    permissions:
+      contents: read
+    # Official Marketplace workflow, pinned to its 2026-10-17 revision.
+    uses: moodlehq/moodle-plugin-release/.github/workflows/moodle-release.yml@7c56bd9ce7b0a3125459924e7bd08570d41b9aa3
+    with:
+      tag: ${{ needs.validate.outputs.tag }}
+      release_notes: ${{ github.event.release.body || inputs.release_notes }}
+    secrets:
+      MOODLE_MARKETPLACE_TOKEN: ${{ secrets.MOODLE_MARKETPLACE_TOKEN }}
