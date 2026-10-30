@@ -1,0 +1,36 @@
+# Schema: https://camp-registry.org/schema/listing.schema.json
+name: GuardLMS for Moodle
+summary: Connect Moodle to GuardLMS for vulnerability alerts, update reminders and security configuration checks, with optional error monitoring and page analytics.
+description: |
+  Connect your Moodle site to [GuardLMS](https://guardlms.com) for continuous
+  vulnerability and update monitoring. The plugin reports your Moodle and
+  plugin inventory daily and checks selected security settings, including
+  MFA, reCAPTCHA and Mobile API configuration.
+
+  ## Features
+
+  - Daily software inventory for vulnerability alerts and update reminders.
+  - Security configuration checks, with availability depending on your Moodle version.
+  - Optional JavaScript, PHP and SQL error reporting.
+  - Optional page views and scroll-depth analytics on eligible plans.
+  - One-click connection and reconnect controls in Moodle administration.
+
+  ## Requirements and data sharing
+
+  Requires Moodle 3.9 or later, a GuardLMS account, outbound HTTPS access and
+  working Moodle cron. The connector is GPL-licensed; the connected GuardLMS
+  service offers paid plans and a free trial. Some features require an eligible plan.
+
+  Inventory reporting sends software, environment and selected configuration
+  metadata to GuardLMS. Optional monitoring can send page URLs and diagnostic
+  context, including redacted SQL and request parameters for server errors.
+  Review the [monitoring and privacy documentation](https://github.com/LdesignMedia/moodle-local_guardlms/blob/main/docs/monitoring.md)
+  before enabling optional monitoring.
+labels:
+  - paid-service
+  - external-account
+category: Security
+links:
+  docs: https://github.com/LdesignMedia/moodle-local_guardlms#readme
+  issues: https://github.com/LdesignMedia/moodle-local_guardlms/issues
+  changelog: https://github.com/LdesignMedia/moodle-local_guardlms/releases

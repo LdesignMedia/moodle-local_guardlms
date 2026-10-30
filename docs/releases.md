@@ -1,4 +1,4 @@
-# Releasing to Moodle Marketplace
+# Releasing to Moodle Marketplace and CAMP
 
 [Back to README](../README.md)
 
@@ -62,7 +62,39 @@ Marketplace token or changes Marketplace account permissions.
 
 The caller pins Moodle's release workflow to a reviewed commit. Review upstream
 changes before updating that pin. The package is built with `git archive` and
-respects `.gitattributes`; GitHub workflow files are excluded.
+respects `.gitattributes`; workflow files, CAMP metadata and tests are excluded.
 
 See the [Marketplace API reference](https://moodledev.io/general/community/plugincontribution/marketplace-api/add-plugin-version)
 for submission responses and the required archive metadata.
+
+## Publishing to CAMP
+
+The [CAMP listing](https://camp-registry.org/plugin/local_guardlms.html) must be
+claimed in [camp-index](https://github.com/camp-registry/camp-index/blob/main/plugins/local/local_guardlms.yml)
+before releases can be published. The claim declares the maintainer, private
+security-reporting contact and `paid-service` / `external-account` disclosures.
+The registry generates release records; do not hand-edit the release ledger.
+
+Pushing a new `v*` tag starts **Publish release to CAMP**, which calls CAMP's
+[maintained release workflow](https://github.com/camp-registry/camp-workflows/blob/v1/.github/workflows/release.yml).
+Use the tested release commit described above. The tagged commit must contain
+`.camp/listing.yml`, `.gitattributes` and the CAMP workflow. CAMP uses GitHub's
+short-lived OIDC identity to open a release PR in its index; no additional
+repository secret or personal access token is required.
+
+The registry rebuilds the ZIP from the tag and verifies its hash before merging
+the release. The first accepted release makes the plugin installable through
+CAMP. Check both the **Publish release to CAMP** run and its linked registry PR.
+
+Keep `.camp/listing.yml` current: its description and disclosure labels are
+ingested at each release. The workflow explicitly lists Moodle 3.9 through 5.3
+because `version.php` declares only the minimum version. Update that input when
+the plugin's documented compatibility or tested upper bound changes.
+
+To retry, run **Publish release to CAMP** at the existing tag, not `main`.
+Tags created before this setup do not contain the workflow or manifest and
+cannot use that retry path. Backfilling them requires CAMP's separate,
+admin-reviewed historical release process; never move an existing tag.
+
+See the [CAMP author guide](https://camp-registry.org/authors.html) for registry
+validation and publishing details.
