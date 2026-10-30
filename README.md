@@ -7,6 +7,7 @@
 # GuardLMS for Moodle
 
 [![CI](https://github.com/LdesignMedia/moodle-local_guardlms/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/LdesignMedia/moodle-local_guardlms/actions/workflows/ci.yml)
+[![CAMP](https://camp-registry.org/badge/local_guardlms.svg)](https://camp-registry.org/plugin/local_guardlms.html)
 
 Connect your Moodle site to [GuardLMS](https://guardlms.com) for vulnerability
 alerts, update reminders and security configuration checks.
@@ -74,7 +75,7 @@ and the [inventory reference](docs/inventory.md) for the configuration payload.
 - [Browser monitoring, analytics and server errors](docs/monitoring.md)
 - [Inventory, security checks and payload reference](docs/inventory.md)
 - [Development, tests and compatibility](docs/development.md)
-- [Releasing to Moodle Marketplace](docs/releases.md)
+- [Releasing to Moodle Marketplace and CAMP](docs/releases.md)
 
 ## Support and license
 
