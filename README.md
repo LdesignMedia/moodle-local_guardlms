@@ -40,6 +40,9 @@ helps you investigate browser and server problems from the GuardLMS dashboard.
 For manual installation, place the plugin in `local/guardlms` on Moodle 3.9–5.0,
 or `public/local/guardlms` on Moodle 5.1 and later.
 
+Composer-managed Moodle **5.2+** sites can use the
+[Composer installation guide](docs/composer.md).
+
 Inventory is sent daily by cron. To send it now, run **Push site information to
 GuardLMS** under **Server → Scheduled tasks**. If the plugin asks you to reconnect,
 use **Reconnect** on its settings page.

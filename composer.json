@@ -1,0 +1,15 @@
+{
+    "name": "ldesignmedia/moodle-local_guardlms",
+    "description": "GuardLMS security inventory and optional error monitoring for Moodle.",
+    "type": "moodle-local",
+    "license": "GPL-3.0-or-later",
+    "homepage": "https://guardlms.com",
+    "support": {
+        "issues": "https://github.com/LdesignMedia/moodle-local_guardlms/issues",
+        "source": "https://github.com/LdesignMedia/moodle-local_guardlms"
+    },
+    "require": {
+        "moodle/moodle": "^5.2",
+        "moodle/composer-installer": "^1.2.2"
+    }
+}

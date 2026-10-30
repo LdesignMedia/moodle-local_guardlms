@@ -29,8 +29,8 @@ is passed only to the submission job.
    you want to release. Deploy any required GuardLMS receiver changes first.
 3. Create a GitHub Release with a tag matching **`v<plugin release>`**, such as
    `v1.10.0`. Use that tested commit and write the release notes in the release body.
-4. Publish the GitHub Release. The workflow validates the tag, plugin metadata,
-   `main` ancestry and the most recent matching `main` CI run before submitting.
+4. Publish the GitHub Release. The workflow checks the tag, release name,
+   `main` ancestry and the latest matching `main` CI result before submitting.
 5. Review the workflow response and the version's status in Marketplace.
 
 Tags use `vMAJOR.MINOR.PATCH`, optionally followed by a prerelease suffix such as
@@ -47,7 +47,7 @@ release automation does not change the plugin's declared maturity.
 After correcting a failed prerequisite, open **Actions → Release to Moodle
 Marketplace → Run workflow**, select `main`, and enter the existing tag. Optional
 release notes override the normal fallback to its GitHub Release body or changelog.
-If `main` CI is still running, wait for it to finish before retrying.
+If `main` CI is still running, wait for it to pass before retrying.
 
 If a previous submission already returned HTTP 201, check Marketplace before
 retrying: that response means the version was accepted and automated checks were
@@ -62,14 +62,7 @@ Marketplace token or changes Marketplace account permissions.
 
 The caller pins Moodle's release workflow to a reviewed commit. Review upstream
 changes before updating that pin. The package is built with `git archive` and
-respects `.gitattributes`; CI and release-helper files are excluded.
-
-Release validation is tested in the normal CI workflow without calling the
-Marketplace submission API. Run those checks locally with:
-
-```bash
-python3 -B -m unittest discover -s scripts -p 'test_marketplace_release.py' -v
-```
+respects `.gitattributes`; GitHub workflow files are excluded.
 
 See the [Marketplace API reference](https://moodledev.io/general/community/plugincontribution/marketplace-api/add-plugin-version)
 for submission responses and the required archive metadata.
