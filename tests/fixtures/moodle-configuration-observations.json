@@ -1,0 +1,30 @@
+{
+  "security_config": {
+    "hardening": {
+      "version": 1,
+      "mfa": {
+        "status": "observed",
+        "observed_at": 1793361600,
+        "enabled": true,
+        "enabled_factors": 2,
+        "password_only_fallback": false,
+        "configuration_complete": true,
+        "manual_admins_present": true,
+        "manual_admins_mfa_required": false
+      },
+      "recaptcha": {
+        "status": "observed",
+        "observed_at": 1793361600,
+        "keys_configured": true,
+        "self_registration_enabled": true,
+        "signup_enabled": false,
+        "login_enabled": false
+      },
+      "mobile_api": {
+        "status": "observed",
+        "observed_at": 1793361600,
+        "enabled": true
+      }
+    }
+  }
+}

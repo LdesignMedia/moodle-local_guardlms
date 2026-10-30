@@ -465,11 +465,45 @@ a separate feature with its own privacy declaration (page URLs, browser/session
 telemetry and errors); disable it if that transfer is not appropriate.
 
 
+### Moodle MFA, reCAPTCHA and Mobile API observations (1.10.0)
+
+Deploy the GuardLMS API support for issue #2776 before this connector: the
+receiver validates the version-1 hardening block with a closed schema. The new
+`recaptcha` and `mobile_api` groups remain version 1 and retain the existing
+`status`/`observed_at` envelope.
+
+- `mfa` adds `configuration_complete`, `manual_admins_present` and, when provable,
+  `manual_admins_mfa_required`. Active manual-authentication site administrators
+  and users with `moodle/site:config` at system context are checked locally.
+  Only the resulting booleans are sent. No user factor enrolments, identities,
+  user counts, secrets, sessions or IP addresses are exported or changed. A disabled
+  MFA policy or a known static factor combination reaching 100 points without a
+  challenge produces a negative enforcement verdict. Conditional factors and
+  custom factors remain unknown when a safe conclusion is unavailable.
+  Configuration completeness checks supported input factors and the 100-point
+  threshold; it does not prove provider operation or user enrolment.
+- `recaptcha` adds `keys_configured`, `self_registration_enabled` (active email
+  self-registration with account creation allowed), `signup_enabled` (the
+  auth_email switch) and `login_enabled` on Moodle versions exposing that switch.
+  Both keys are reduced to presence booleans; no Google request, account details
+  or key material is sent. The administrator must test key validity and domain
+  registration locally.
+- `mobile_api.enabled` means the mobile setting, global web services, REST
+  protocol and official `moodle_mobile_app` service are all enabled. It does not
+  establish whether anyone uses the mobile app. GuardLMS recommends disabling
+  the API only if the site does not need the app.
+
+A representative receiver contract is in
+[`tests/fixtures/moodle-configuration-observations.json`](tests/fixtures/moodle-configuration-observations.json).
+
+Missing verdicts mean unknown. Check observation time and push again after
+configuration changes; these are scheduled configuration snapshots.
+
 ### Offline SSRF policy and filesystem checks
 
 The hardening block now includes `ssrf` and `filesystem`. Configured cURL
-IP addresses and CIDRs may be forwarded (up to 200); other rule formats and
-hostnames are omitted from exported evidence and counted. Moodle's own IP-rule
+IP addresses, CIDRs and hostnames remain local; only the number of omitted rules
+and fixed sample verdicts are exported. Moodle's own IP-rule
 parser checks fixed metadata, loopback, private IPv4 and local IPv6 samples.
 This detects gaps in nonempty lists without performing HTTP requests, DNS
 lookups, metadata reads or exploitation. Passing samples do not establish full

@@ -34,7 +34,9 @@ class hardening_report {
      */
     public static function collect(): array {
         $result = ['version' => 1];
-        foreach (['deployment', 'tokens', 'enrolments', 'tasks', 'mfa', 'antivirus', 'ssrf', 'filesystem'] as $section) {
+        $sections = ['deployment', 'tokens', 'enrolments', 'tasks', 'mfa', 'recaptcha', 'mobile_api',
+            'antivirus', 'ssrf', 'filesystem'];
+        foreach ($sections as $section) {
             try {
                 $metrics = self::$section();
                 $result[$section] = ['status' => $metrics === null ? 'unsupported' : 'observed',
@@ -127,25 +129,44 @@ class hardening_report {
     }
 
     /**
-     * Configuration only: never inspect user factors, secrets, roles or IP allowlists.
+     * Inspect local policy without reading enrolled factors or exporting user records.
      *
      * @return array|null
      */
     private static function mfa(): ?array {
-        if (!class_exists(\tool_mfa\plugininfo\factor::class)) {
-            return null;
+        return mfa_configuration_report::collect();
+    }
+
+    /**
+     * Local settings only: key presence cannot verify Google's key/domain acceptance.
+     *
+     * @return array
+     */
+    private static function recaptcha(): array {
+        global $CFG;
+        $result = [
+            'keys_configured' => trim((string) ($CFG->recaptchapublickey ?? '')) !== ''
+                && trim((string) ($CFG->recaptchaprivatekey ?? '')) !== '',
+            'self_registration_enabled' => ($CFG->registerauth ?? '') === 'email'
+                && is_enabled_auth('email') && empty($CFG->authpreventaccountcreation),
+            'signup_enabled' => !empty(get_config('auth_email', 'recaptcha')),
+        ];
+        if (property_exists($CFG, 'enableloginrecaptcha')) {
+            $result['login_enabled'] = !empty($CFG->enableloginrecaptcha);
         }
-        $enabled = get_config('tool_mfa', 'enabled');
-        $factors = \tool_mfa\plugininfo\factor::get_enabled_factors();
-        $fallback = false;
-        foreach ($factors as $factor) {
-            // No other factors at 100 permits password-only login for users without a configured factor.
-            if ($factor->name === 'nosetup' && (int) $factor->get_weight() >= 100) {
-                $fallback = true;
-            }
-        }
-        return ['enabled' => !empty($enabled), 'enabled_factors' => count($factors),
-            'password_only_fallback' => $fallback];
+        return $result;
+    }
+
+    /**
+     * Effective availability of Moodle's official mobile REST web service.
+     *
+     * @return array
+     */
+    private static function mobile_api(): array {
+        global $CFG, $DB;
+        return ['enabled' => !empty($CFG->enablewebservices) && !empty($CFG->enablemobilewebservice)
+            && in_array('rest', explode(',', (string) ($CFG->webserviceprotocols ?? '')), true)
+            && $DB->record_exists('external_services', ['shortname' => 'moodle_mobile_app', 'enabled' => 1])];
     }
 
     /**
