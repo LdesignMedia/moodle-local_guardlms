@@ -2,10 +2,19 @@ name: ci
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+
 jobs:
   ci:
-    uses: catalyst/catalyst-moodle-workflows/.github/workflows/ci.yml@main
+    # The shared workflow declares a Marketplace tag job with contents: write.
+    # Keep that required permission scoped to this reusable-workflow call.
+    permissions:
+      contents: write
+    uses: catalyst/catalyst-moodle-workflows/.github/workflows/ci.yml@1d0b6409430e7fee727ef54333369985f7f8df9b # main
     with:
+      # Its local actions and scripts must use the same reviewed revision.
+      internal_workflow_branch: '1d0b6409430e7fee727ef54333369985f7f8df9b'
       disable_behat: false
       min_php: '7.4'
       # The shared 5.3 jobs currently require an unavailable snapshot image and
@@ -51,11 +60,11 @@ jobs:
           --health-cmd="pg_isready -U postgres"
           --health-interval=10s --health-timeout=5s --health-retries=3
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           path: plugin
           persist-credentials: false
-      - uses: shivammathur/setup-php@v2
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
         with:
           php-version: ${{ matrix.php }}
           extensions: mysqli, pgsql, intl, mbstring, soap, sodium, zip, gd
