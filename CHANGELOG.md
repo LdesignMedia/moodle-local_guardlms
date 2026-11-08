@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.11.0 — 2026-11-08
+
+- Report bundled core and plugin dependency metadata through the authenticated
+  inventory channel, including package locations and coverage limitations.
+- Synchronize monitoring SDK release metadata and advance the plugin build after 1.10.1.
+
 ## 1.10.1 — 2026-11-08
 
 - Include the CAMP listing manifest and automated release workflow in the tagged

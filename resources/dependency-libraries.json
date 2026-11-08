@@ -1,0 +1,118 @@
+{
+  "firebase/php-jwt": [
+    "composer",
+    "firebase/php-jwt"
+  ],
+  "googleapis/php-jwt": [
+    "composer",
+    "firebase/php-jwt"
+  ],
+  "phpoffice/phpspreadsheet": [
+    "composer",
+    "phpoffice/phpspreadsheet"
+  ],
+  "phpmailer/phpmailer": [
+    "composer",
+    "phpmailer/phpmailer"
+  ],
+  "guzzle/guzzle": [
+    "composer",
+    "guzzlehttp/guzzle"
+  ],
+  "guzzle/psr7": [
+    "composer",
+    "guzzlehttp/psr7"
+  ],
+  "guzzle/promises": [
+    "composer",
+    "guzzlehttp/promises"
+  ],
+  "simplesamlphp/saml2": [
+    "composer",
+    "simplesamlphp/saml2"
+  ],
+  "simplesamlphp/saml2-legacy": [
+    "composer",
+    "simplesamlphp/saml2-legacy"
+  ],
+  "simplesamlphp/simplesamlphp": [
+    "composer",
+    "simplesamlphp/simplesamlphp"
+  ],
+  "spomky-labs/otphp": [
+    "composer",
+    "spomky-labs/otphp"
+  ],
+  "ezyang/htmlpurifier": [
+    "composer",
+    "ezyang/htmlpurifier"
+  ],
+  "adodb/adodb": [
+    "composer",
+    "adodb/adodb-php"
+  ],
+  "moodle/tcpdf": [
+    "composer",
+    "tecnickcom/tcpdf"
+  ],
+  "tecnickcom/tcpdf": [
+    "composer",
+    "tecnickcom/tcpdf"
+  ],
+  "michelf/php-markdown": [
+    "composer",
+    "michelf/php-markdown"
+  ],
+  "mustache/mustache.php": [
+    "composer",
+    "mustache/mustache"
+  ],
+  "symfony/yaml": [
+    "composer",
+    "symfony/yaml"
+  ],
+  "jquery/jquery": [
+    "npm",
+    "jquery"
+  ],
+  "jquery/jquery-ui": [
+    "npm",
+    "jquery-ui"
+  ],
+  "moment/moment": [
+    "npm",
+    "moment"
+  ],
+  "chartjs/chart.js": [
+    "npm",
+    "chart.js"
+  ],
+  "tinymce/tinymce": [
+    "npm",
+    "tinymce"
+  ],
+  "videojs/video.js": [
+    "npm",
+    "video.js"
+  ],
+  "mathjax/mathjax": [
+    "npm",
+    "mathjax"
+  ],
+  "twbs/bootstrap": [
+    "npm",
+    "bootstrap"
+  ],
+  "handlebars-lang/handlebars.js": [
+    "npm",
+    "handlebars"
+  ],
+  "moodle/handlebars.js": [
+    "npm",
+    "handlebars"
+  ],
+  "jmespath/jmespath.php": [
+    "composer",
+    "mtdowling/jmespath.php"
+  ]
+}
