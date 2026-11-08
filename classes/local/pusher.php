@@ -56,7 +56,7 @@ class pusher {
 
         require_once($CFG->libdir . '/filelib.php');
 
-        // ignoresecurity: the push only ever targets the admin-configured GuardLMS
+        // The ignoresecurity option is used only for the admin-configured GuardLMS
         // base URL (trusted first-party), so Moodle's cURL SSRF blocklist must not
         // reject it. See the same note in api_client::exchange().
         $curl = new \curl(['ignoresecurity' => true]);

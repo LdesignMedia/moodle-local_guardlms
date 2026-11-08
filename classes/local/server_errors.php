@@ -416,7 +416,7 @@ class server_errors {
         }
         $event['stackTrace'] = self::scrub($stack, 10000);
         if ($exception instanceof \dml_exception) {
-            // debuginfo carries the failing statement and params only when the
+            // Debuginfo carries the failing statement and params only when the
             // site runs with Moodle debugging on; empty otherwise.
             $sqlcontext = self::sql_context_from_debuginfo((string) ($exception->debuginfo ?? ''));
             if ($sqlcontext !== []) {
@@ -688,7 +688,13 @@ class server_errors {
         }
         $sql = '';
         $params = '';
-        if (preg_match('/^\s*(?:SELECT|INSERT|UPDATE|DELETE|WITH)\b.+?(?=^\s*(?:\[|array\s*\()|^\s*Error code:|\z)/ims', $debuginfo, $m)) {
+        if (
+            preg_match(
+                '/^\s*(?:SELECT|INSERT|UPDATE|DELETE|WITH)\b.+?(?=^\s*(?:\[|array\s*\()|^\s*Error code:|\z)/ims',
+                $debuginfo,
+                $m
+            )
+        ) {
             $sql = trim($m[0]);
         }
         if (preg_match('/(?:\[?\s*array\s*\().+?(?=^\s*Error code:|\z)/ims', $debuginfo, $m)) {
@@ -716,7 +722,8 @@ class server_errors {
         // Secret-shaped key/value pairs in SQL, URL or var_export syntax; the
         // key may itself be quoted in exported arrays ('token' => ...).
         $value = preg_replace(
-            '/(["\']?\b(?:password|passwd|secret|[a-z_]*token|api_?key|authorization|sesskey|nonce)\b["\']?\s*(?:=>|[=:])\s*)(?:\'[^\']*\'|"[^"]*"|[^\s,&;)]+)/i',
+            '/(["\']?\b(?:password|passwd|secret|[a-z_]*token|api_?key|authorization|sesskey|nonce)\b["\']?\s*(?:=>|[=:])\s*)' .
+                '(?:\'[^\']*\'|"[^"]*"|[^\s,&;)]+)/i',
             '$1[redacted]',
             $value
         );
