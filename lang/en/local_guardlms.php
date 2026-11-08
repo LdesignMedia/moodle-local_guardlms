@@ -25,111 +25,95 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['pluginname'] = 'GuardLMS';
-
-// Connect flow.
-$string['connect:connectionheading'] = 'Connection';
-$string['connect:title'] = 'Connect to GuardLMS';
-$string['connect:settingheading'] = 'Connect to GuardLMS';
-$string['connect:settingdesc'] = 'Connect this site to GuardLMS with one click. You only need a GuardLMS account (a free account is enough), no API keys to copy.';
-$string['connect:intro'] = 'Connecting registers this site with your GuardLMS account, verifies site ownership automatically, and sets up the daily inventory push, all in one click.';
-$string['connect:freeaccount'] = 'You only need a GuardLMS account; a free account is enough. If you are not logged in yet, you can log in or register during the connection.';
 $string['connect:button'] = 'Connect';
+$string['connect:connectedat'] = 'Connected at: {$a}';
+$string['connect:connectionheading'] = 'Connection';
 $string['connect:disconnectbutton'] = 'Disconnect';
 $string['connect:disconnected'] = 'This site is no longer connected to GuardLMS. It has stopped reporting.';
-$string['connect:reconnectbutton'] = 'Reconnect';
-$string['connect:reconnectinfo'] = 'Reconnecting issues a fresh push key for this site. Use it if pushes fail or the key is about to expire.';
-$string['connect:statuslabel'] = 'Status:';
-$string['connect:statusconnected'] = 'Connected';
-$string['connect:statusurlmismatch'] = 'Site URL mismatch';
-$string['connect:urlmismatchat'] = 'Last site URL mismatch: {$a}';
-$string['connect:statusdisconnected'] = 'Not connected';
-$string['connect:statusrejected'] = 'Reconnect required';
-$string['connect:rejectedexplain'] = 'GuardLMS no longer accepts this site\'s connection key. The key was revoked, or the website it belonged to was removed from the GuardLMS dashboard. This site has stopped reporting: use Reconnect below to issue a new key.';
-$string['connect:rejectedsince'] = 'First refused: {$a}';
-$string['connect:connectedat'] = 'Connected at: {$a}';
+$string['connect:freeaccount'] = 'You only need a GuardLMS account; a free account is enough. If you are not logged in yet, you can log in or register during the connection.';
+$string['connect:intro'] = 'Connecting registers this site with your GuardLMS account, verifies site ownership automatically, and sets up the daily inventory push, all in one click.';
 $string['connect:keyexpires'] = 'Expires at: {$a}';
 $string['connect:lastpush'] = 'Last push: {$a}';
+$string['connect:reconnectbutton'] = 'Reconnect';
+$string['connect:reconnectinfo'] = 'Reconnecting issues a fresh push key for this site. Use it if pushes fail or the key is about to expire.';
+$string['connect:rejectedexplain'] = 'GuardLMS no longer accepts this site\'s connection key. The key was revoked, or the website it belonged to was removed from the GuardLMS dashboard. This site has stopped reporting: use Reconnect below to issue a new key.';
+$string['connect:rejectedsince'] = 'First refused: {$a}';
+$string['connect:settingdesc'] = 'Connect this site to GuardLMS with one click. You only need a GuardLMS account (a free account is enough), no API keys to copy.';
+$string['connect:settingheading'] = 'Connect to GuardLMS';
+$string['connect:statusconnected'] = 'Connected';
+$string['connect:statusdisconnected'] = 'Not connected';
+$string['connect:statuslabel'] = 'Status:';
+$string['connect:statusrejected'] = 'Reconnect required';
+$string['connect:statusurlmismatch'] = 'Site URL mismatch';
 $string['connect:success'] = 'Your site is now connected to GuardLMS and its first inventory has been sent.';
-
-$string['onboarding:titlenew'] = 'Get started with GuardLMS';
-$string['onboarding:descriptionnew'] = 'Bring your Moodle security findings, updates and monitoring together in one dashboard. A free account is enough to get started.';
-$string['onboarding:titleconnected'] = 'Your Moodle security overview';
+$string['connect:title'] = 'Connect to GuardLMS';
+$string['connect:urlmismatchat'] = 'Last site URL mismatch: {$a}';
+$string['error:connectfailed'] = 'Could not reach GuardLMS to complete the connection: {$a}';
+$string['error:connectrejected'] = 'GuardLMS rejected the connection: {$a}';
+$string['error:connectstate'] = 'The connection attempt is invalid or has expired. Please start the connection again from the Connect to GuardLMS page.';
+$string['error:notconfigured'] = 'GuardLMS is not connected yet. Use the Connect to GuardLMS button on the plugin settings page to set it up.';
+$string['error:pushfailed'] = 'The push to GuardLMS failed: {$a}';
+$string['error:pushhttp'] = 'GuardLMS rejected the push with HTTP status {$a}.';
+$string['error:pushrejected'] = 'GuardLMS no longer accepts this site\'s connection key (HTTP {$a}). The key was revoked, or the website it belonged to was removed from the GuardLMS dashboard. Reconnect this site from the GuardLMS settings page to issue a new key.';
+$string['error:sdkrefreshfailed'] = 'Could not refresh the real-time monitoring settings: {$a}';
+$string['error:siteurlmismatch'] = 'GuardLMS expects {$a->expected_siteurl}, but this push reported {$a->received_siteurl}. Check that Moodle uses the same site address in browser requests and scheduled tasks. For the same installation, correct Moodle\'s site address or set Site URL override in Advanced settings to the registered address. If this is a different or cloned site, reconnect it using its own address. Reconnecting alone will not fix different browser and scheduled-task addresses.';
+$string['onboarding:createaccount'] = 'Create a free account';
 $string['onboarding:descriptionconnected'] = 'Open your GuardLMS dashboard to review security findings, available updates and monitoring for your Moodle site.';
-$string['onboarding:titlerejected'] = 'Restore your GuardLMS connection';
+$string['onboarding:descriptionnew'] = 'Bring your Moodle security findings, updates and monitoring together in one dashboard. A free account is enough to get started.';
 $string['onboarding:descriptionrejected'] = 'Open your dashboard to check your account, then use Reconnect below to restore reporting for this site.';
+$string['onboarding:newtabhint'] = 'GuardLMS links open in a new tab, keeping these settings open.';
+$string['onboarding:opendashboard'] = 'Open dashboard';
 $string['onboarding:stepaccount'] = 'Create your account';
 $string['onboarding:stepaccountdescription'] = 'Sign up for GuardLMS, or use your existing account.';
 $string['onboarding:stepconnect'] = 'Connect this site';
 $string['onboarding:stepconnectdescription'] = 'Return here and select Connect below to link this Moodle site.';
 $string['onboarding:stepreview'] = 'Explore your dashboard';
 $string['onboarding:stepreviewdescription'] = 'Review your site\'s security findings and monitoring in GuardLMS.';
-$string['onboarding:createaccount'] = 'Create a free account';
-$string['onboarding:opendashboard'] = 'Open dashboard';
-$string['onboarding:newtabhint'] = 'GuardLMS links open in a new tab, keeping these settings open.';
-
-// Settings.
-$string['settings:advancedheading'] = 'Advanced settings';
-$string['settings:advancedwarning'] = 'These settings are only needed for a self-hosted GuardLMS instance or for support. Changing them on a normal site breaks the connection.';
-$string['settings:pushpath'] = 'Push path';
-$string['settings:pushpath_desc'] = 'Path of the inventory push endpoint on the GuardLMS host. The connection sets this automatically.';
-$string['settings:enabled'] = 'Enable daily push';
-$string['settings:enabled_desc'] = 'When enabled, the site reporting payload is sent to GuardLMS once a day.';
-$string['settings:baseurl'] = 'GuardLMS base URL';
-$string['settings:baseurl_desc'] = 'Base URL of your GuardLMS instance, for example https://dashboard.guardlms.com. Leave the default unless you run a self-hosted GuardLMS.';
-$string['settings:siteurloverride'] = 'Site URL override';
-$string['settings:siteurloverride_desc'] = 'Optional. The site URL registered with GuardLMS and sent on every push. Leave empty to use this site\'s address ({$a}). Set an explicit value only if GuardLMS rejects pushes with a "siteurl does not match" error, for example on cloned, staging or reverse-proxied sites where the reported address differs from the one registered when you connected. Reconnect after changing this so the push key is reissued for the new URL.';
-
-// Real-time monitoring settings.
-$string['settings:realtimeheading'] = 'Real-time monitoring';
-$string['settings:sdkenabled'] = 'Enable real-time monitoring';
-$string['settings:sdkenabled_desc'] = 'When enabled, JavaScript errors from your site are reported to GuardLMS as they happen. No learner names, email addresses or user IDs are sent, and clicks and form entries are never recorded.';
-$string['settings:sdkanalytics'] = 'Enable page analytics';
-$string['settings:sdkanalytics_desc'] = 'Optional. Also send anonymous page view and scroll depth information. Requires a GuardLMS plan that includes analytics.';
-
-// Real-time monitoring status.
-$string['sdk:statusactive'] = 'Real-time monitoring is active. Errors from this site are being reported to GuardLMS.';
-$string['sdk:statusready'] = 'This site is ready for real-time monitoring. Tick the box below and save to switch it on.';
-$string['sdk:statusnokey'] = 'The monitoring key has not been fetched yet. Use Refresh now to fetch it.';
-$string['sdk:statusnotconnected'] = 'Connect this site to GuardLMS first. Real-time monitoring needs the connection to fetch its key.';
-$string['sdk:backendunsupportedactive'] = 'This GuardLMS instance no longer offers real-time monitoring, but monitoring is still switched on here and the GuardLMS script is still being loaded on every page. Untick the box below and save to stop it.';
-$string['sdk:statusnosubscription'] = 'No active GuardLMS subscription - real-time data is not being collected.';
-$string['sdk:statusdashboardoff'] = 'Real-time monitoring is turned off in the GuardLMS dashboard.';
-$string['sdk:statusrefresherror'] = 'The last attempt to reach GuardLMS failed: {$a}';
+$string['onboarding:titleconnected'] = 'Your Moodle security overview';
+$string['onboarding:titlenew'] = 'Get started with GuardLMS';
+$string['onboarding:titlerejected'] = 'Restore your GuardLMS connection';
+$string['pluginname'] = 'GuardLMS';
+$string['privacy:metadata:guardlms'] = 'With the separate server-error opt-in enabled, redacted PHP/SQL errors and stack traces are also sent to GuardLMS. Native SQL text and parameters remain in Moodle. With real-time monitoring enabled, this plugin loads GuardLMS JavaScript that reports browser errors from this site to GuardLMS. If page analytics is also enabled, it reports a record of every page view as well, not only pages where an error happened. The plugin does not attach Moodle user identities to reports, and clicks and form entries are never recorded.';
+$string['privacy:metadata:guardlms:errordetails'] = 'Browser errors and, with server reporting enabled, PHP and SQL error messages, exception classes, file paths, line numbers and stack traces. Server traces exclude arguments and SQL parameters; common secrets and quoted literals are redacted.';
+$string['privacy:metadata:guardlms:ipaddress'] = 'The IP address the report is sent from. The plugin does not include it in the report, but the receiving server sees it as part of the connection.';
+$string['privacy:metadata:guardlms:pageurl'] = 'The address of the page the error happened on. Session keys and similar tokens are removed before it is sent.';
+$string['privacy:metadata:guardlms:pageviews'] = 'Only when page analytics is enabled: a record of each page visited, sent on every page view rather than only when something goes wrong.';
+$string['privacy:metadata:guardlms:referrerurl'] = 'The address of the page that linked to the page the error happened on.';
+$string['privacy:metadata:guardlms:scrolldepth'] = 'Only when page analytics is enabled: how far down each page was scrolled.';
+$string['privacy:metadata:guardlms:sessionid'] = 'An anonymous identifier that groups errors from one browsing session together. It is not the Moodle user ID and cannot be traced back to an account by GuardLMS.';
+$string['privacy:metadata:guardlms:useragent'] = 'The browser and operating system reported by the browser, plus the window size.';
 $string['sdk:analyticsnotinplan'] = 'Analytics is not included in your GuardLMS plan - error monitoring is still active.';
-$string['sdk:domainmismatch'] = 'GuardLMS only accepts data from {$a->allowed}; this site reports as {$a->actual}. Update Allowed domains in the GuardLMS dashboard.';
 $string['sdk:backendunsupported'] = 'This GuardLMS instance does not support real-time monitoring yet.';
-$string['sdk:norefreshyet'] = 'No successful refresh yet.';
+$string['sdk:backendunsupportedactive'] = 'This GuardLMS instance no longer offers real-time monitoring, but monitoring is still switched on here and the GuardLMS script is still being loaded on every page. Untick the box below and save to stop it.';
+$string['sdk:domainmismatch'] = 'GuardLMS only accepts data from {$a->allowed}; this site reports as {$a->actual}. Update Allowed domains in the GuardLMS dashboard.';
 $string['sdk:lastrefresh'] = 'Last successful refresh: {$a}';
+$string['sdk:norefreshyet'] = 'No successful refresh yet.';
 $string['sdk:refreshnow'] = 'Refresh now';
 $string['sdk:refreshsuccess'] = 'The GuardLMS real-time monitoring settings have been refreshed.';
+$string['sdk:statusactive'] = 'Real-time monitoring is active. Errors from this site are being reported to GuardLMS.';
+$string['sdk:statusdashboardoff'] = 'Real-time monitoring is turned off in the GuardLMS dashboard.';
+$string['sdk:statusnokey'] = 'The monitoring key has not been fetched yet. Use Refresh now to fetch it.';
+$string['sdk:statusnosubscription'] = 'No active GuardLMS subscription - real-time data is not being collected.';
+$string['sdk:statusnotconnected'] = 'Connect this site to GuardLMS first. Real-time monitoring needs the connection to fetch its key.';
+$string['sdk:statusready'] = 'This site is ready for real-time monitoring. Tick the box below and save to switch it on.';
+$string['sdk:statusrefresherror'] = 'The last attempt to reach GuardLMS failed: {$a}';
 $string['sdk:testerror'] = 'Send a test error';
-
-// Scheduled task.
-$string['task:pushsiteinfo'] = 'Push site information to GuardLMS';
-
-// Errors.
-$string['error:pushfailed'] = 'The push to GuardLMS failed: {$a}';
-$string['error:pushhttp'] = 'GuardLMS rejected the push with HTTP status {$a}.';
-$string['error:siteurlmismatch'] = 'GuardLMS expects {$a->expected_siteurl}, but this push reported {$a->received_siteurl}. Check that Moodle uses the same site address in browser requests and scheduled tasks. For the same installation, correct Moodle\'s site address or set Site URL override in Advanced settings to the registered address. If this is a different or cloned site, reconnect it using its own address. Reconnecting alone will not fix different browser and scheduled-task addresses.';
-$string['error:pushrejected'] = 'GuardLMS no longer accepts this site\'s connection key (HTTP {$a}). The key was revoked, or the website it belonged to was removed from the GuardLMS dashboard. Reconnect this site from the GuardLMS settings page to issue a new key.';
-$string['error:notconfigured'] = 'GuardLMS is not connected yet. Use the Connect to GuardLMS button on the plugin settings page to set it up.';
-$string['error:connectstate'] = 'The connection attempt is invalid or has expired. Please start the connection again from the Connect to GuardLMS page.';
-$string['error:connectfailed'] = 'Could not reach GuardLMS to complete the connection: {$a}';
-$string['error:connectrejected'] = 'GuardLMS rejected the connection: {$a}';
-$string['error:sdkrefreshfailed'] = 'Could not refresh the real-time monitoring settings: {$a}';
-
-// Privacy.
-$string['privacy:metadata:guardlms'] = 'With the separate server-error opt-in enabled, redacted PHP/SQL errors and stack traces are also sent to GuardLMS. Native SQL text and parameters remain in Moodle. With real-time monitoring enabled, this plugin loads GuardLMS JavaScript that reports browser errors from this site to GuardLMS. If page analytics is also enabled, it reports a record of every page view as well, not only pages where an error happened. The plugin does not attach Moodle user identities to reports, and clicks and form entries are never recorded.';
-$string['privacy:metadata:guardlms:pageurl'] = 'The address of the page the error happened on. Session keys and similar tokens are removed before it is sent.';
-$string['privacy:metadata:guardlms:referrerurl'] = 'The address of the page that linked to the page the error happened on.';
-$string['privacy:metadata:guardlms:useragent'] = 'The browser and operating system reported by the browser, plus the window size.';
-$string['privacy:metadata:guardlms:sessionid'] = 'An anonymous identifier that groups errors from one browsing session together. It is not the Moodle user ID and cannot be traced back to an account by GuardLMS.';
-$string['privacy:metadata:guardlms:errordetails'] = 'Browser errors and, with server reporting enabled, PHP and SQL error messages, exception classes, file paths, line numbers and stack traces. Server traces exclude arguments and SQL parameters; common secrets and quoted literals are redacted.';
-$string['privacy:metadata:guardlms:pageviews'] = 'Only when page analytics is enabled: a record of each page visited, sent on every page view rather than only when something goes wrong.';
-$string['privacy:metadata:guardlms:scrolldepth'] = 'Only when page analytics is enabled: how far down each page was scrolled.';
-$string['privacy:metadata:guardlms:ipaddress'] = 'The IP address the report is sent from. The plugin does not include it in the report, but the receiving server sees it as part of the connection.';
-
+$string['settings:advancedheading'] = 'Advanced settings';
+$string['settings:advancedwarning'] = 'These settings are only needed for a self-hosted GuardLMS instance or for support. Changing them on a normal site breaks the connection.';
+$string['settings:baseurl'] = 'GuardLMS base URL';
+$string['settings:baseurl_desc'] = 'Base URL of your GuardLMS instance, for example https://dashboard.guardlms.com. Leave the default unless you run a self-hosted GuardLMS.';
+$string['settings:enabled'] = 'Enable daily push';
+$string['settings:enabled_desc'] = 'When enabled, the site reporting payload is sent to GuardLMS once a day.';
+$string['settings:pushpath'] = 'Push path';
+$string['settings:pushpath_desc'] = 'Path of the inventory push endpoint on the GuardLMS host. The connection sets this automatically.';
+$string['settings:realtimeheading'] = 'Real-time monitoring';
+$string['settings:sdkanalytics'] = 'Enable page analytics';
+$string['settings:sdkanalytics_desc'] = 'Optional. Also send anonymous page view and scroll depth information. Requires a GuardLMS plan that includes analytics.';
+$string['settings:sdkenabled'] = 'Enable real-time monitoring';
+$string['settings:sdkenabled_desc'] = 'When enabled, JavaScript errors from your site are reported to GuardLMS as they happen. No learner names, email addresses or user IDs are sent, and clicks and form entries are never recorded.';
 $string['settings:servererrorsenabled'] = 'Report PHP and SQL errors';
 $string['settings:servererrorsenabled_desc'] = 'Send PHP exceptions, SQL errors and available stack traces to the GuardLMS real-time overview. Requires a connected site with active monitoring. Off by default; save this checkbox to start or stop reporting. Error text is redacted before sending. Moodle keeps its native SQL log locally, including SQL text and parameters; these are not sent to GuardLMS.';
+$string['settings:siteurloverride'] = 'Site URL override';
+$string['settings:siteurloverride_desc'] = 'Optional. The site URL registered with GuardLMS and sent on every push. Leave empty to use this site\'s address ({$a}). Set an explicit value only if GuardLMS rejects pushes with a "siteurl does not match" error, for example on cloned, staging or reverse-proxied sites where the reported address differs from the one registered when you connected. Reconnect after changing this so the push key is reissued for the new URL.';
 $string['task:flushservererrors'] = 'Forward SQL errors to GuardLMS';
+$string['task:pushsiteinfo'] = 'Push site information to GuardLMS';
