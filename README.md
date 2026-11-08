@@ -18,6 +18,7 @@ helps you investigate browser and server problems from the GuardLMS dashboard.
 ## Features
 
 - Daily Moodle and plugin inventory for vulnerability and update monitoring.
+- Bundled PHP/JavaScript library metadata for dependency risk findings.
 - Security configuration checks, including MFA, reCAPTCHA and Mobile API settings.
 - Optional JavaScript, PHP and SQL error reporting.
 - Optional page views and scroll-depth analytics on supported plans.
