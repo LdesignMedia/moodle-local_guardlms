@@ -416,8 +416,8 @@ class server_errors {
         }
         $event['stackTrace'] = self::scrub($stack, 10000);
         if ($exception instanceof \dml_exception) {
-            // Debuginfo carries the failing statement and params only when the
-            // site runs with Moodle debugging on; empty otherwise.
+            // Debuginfo carries the failing statement and params only when Moodle debugging is on.
+            // It is empty otherwise.
             $sqlcontext = self::sql_context_from_debuginfo((string) ($exception->debuginfo ?? ''));
             if ($sqlcontext !== []) {
                 $event['customData'] = array_merge($event['customData'] ?? [], $sqlcontext);
