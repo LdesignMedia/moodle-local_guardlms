@@ -241,3 +241,12 @@ check anonymous file access and shared-cache isolation without requesting user
 records. The endpoints reject missing, incorrect and expired probe credentials.
 The backend must support encrypted probe ingestion before these checks run.
 The marker file is replaced on credential rotation rather than accumulated.
+
+
+## Bundled library inventory (1.11.0)
+
+`dependency_inventory` reports software metadata from core and plugin `thirdpartylibs.xml`, Composer lockfiles and installed JSON metadata, and npm lockfiles/installed package metadata. It includes schema version `1`, a UTC observation time, `complete`/`partial`/`failed` status, and a bounded `packages` list. Each package carries ecosystem/name, exact or unknown version, component, relative location, evidence type, development-only flag, customization flag, and metadata disagreement flag. Repository/package mappings are reviewed in `resources/dependency-libraries.json`.
+
+Collection never executes dependency PHP, reads credentials from Composer configuration, or sends source files or absolute server paths. Traversal excludes the data directory, repository internals and test/documentation trees. Symlinks outside the code tree are not followed. File size, file count, package count, traversal count and elapsed time are bounded; incomplete collection is explicitly partial. Installed Composer metadata is cross-checked against lockfile pins and the package directory. Constraints, unknown/custom version strings, missing metadata and unreadable files are not evidence that a dependency is safe.
+
+GuardLMS lists matching advisories in Findings. Release-only and manifest-only matches remain unconfirmed; fresh installed versions can strengthen the same risk. Customized packages and disagreements require verification. These are version-based advisory matches, not exploit tests. Updates to bundled Moodle libraries require a compatible Moodle/plugin release or maintainer-tested patch; do not independently run dependency updates in Moodle core. Older GuardLMS backends may ignore this optional envelope until backend support is enabled.
