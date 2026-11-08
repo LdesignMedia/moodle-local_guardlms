@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   camp:
-    uses: camp-registry/camp-workflows/.github/workflows/release.yml@v1
+    uses: camp-registry/camp-workflows/.github/workflows/release.yml@5a10f41c994070c9bcbc9bb1ec515592530e83ee # v1
     with:
       # version.php declares the minimum only. Keep this range aligned with
       # the documented compatibility and the highest Moodle branch in CI.
