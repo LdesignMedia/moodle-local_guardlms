@@ -28,6 +28,20 @@ use local_guardlms\local\hardening_report;
  */
 final class hardening_report_test extends \advanced_testcase {
     /**
+     * Availability checks must never execute phpinfo or return its diagnostic output.
+     */
+    public function test_php_function_observation_is_bounded_and_runtime_scoped(): void {
+        ob_start();
+        $result = hardening_report::php_functions();
+        $output = ob_get_clean();
+        $this->assertSame('', $output);
+        $this->assertSame(['runtime', 'phpinfo_available'], array_keys($result));
+        $this->assertSame('cli', $result['runtime']);
+        $disabled = array_map('trim', explode(',', strtolower((string)ini_get('disable_functions'))));
+        $this->assertSame(function_exists('phpinfo') && !in_array('phpinfo', $disabled, true), $result['phpinfo_available']);
+    }
+
+    /**
      * Sensitive configuration never appears in the complete exported inventory.
      */
     public function test_inventory_excludes_private_configuration(): void {

@@ -85,3 +85,15 @@ Report problems through [GitHub issues](https://github.com/LdesignMedia/moodle-l
 Learn more at [guardlms.com](https://guardlms.com).
 
 Licensed under [GNU GPL v3 or later](LICENSE).
+
+### PHP diagnostic availability (1.12.0)
+
+Deploy the GuardLMS receiver supporting issue LdesignMedia/guardlms#2935 before
+upgrading: older receivers reject the new `hardening.php_functions` section.
+The connector observes `phpinfo` availability with `function_exists` and the local
+`disable_functions` list, without calling the function or exporting that list.
+Only a runtime label and boolean leave Moodle. Web and CLI observations remain
+separate; use a manual web administration push for web-runtime evidence. Scheduled
+CLI pushes cannot establish web availability. Page access is not tested, and
+function availability does not establish public exposure. PHP configuration is
+never changed. Unknown SAPIs and collection failures remain unsupported/failed.

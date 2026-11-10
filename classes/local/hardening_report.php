@@ -36,7 +36,7 @@ class hardening_report {
     public static function collect(): array {
         $result = ['version' => 1];
         $sections = ['deployment', 'tokens', 'enrolments', 'tasks', 'mfa', 'recaptcha', 'mobile_api',
-            'antivirus', 'ssrf', 'filesystem'];
+            'antivirus', 'ssrf', 'filesystem', 'php_functions'];
         foreach ($sections as $section) {
             try {
                 $metrics = self::$section();
@@ -48,6 +48,22 @@ class hardening_report {
             }
         }
         return $result;
+    }
+
+    /**
+     * Observe availability only; never call phpinfo or export PHP configuration.
+     *
+     * @return array|null Runtime-scoped boolean, or unsupported SAPI. Never a claim about page access.
+     */
+    public static function php_functions(): ?array {
+        if (!in_array(PHP_SAPI, ['cli', 'phpdbg', 'apache2handler', 'cgi-fcgi', 'fpm-fcgi', 'litespeed', 'cli-server'], true)) {
+            return null;
+        }
+        $disabled = array_map('trim', explode(',', strtolower((string)ini_get('disable_functions'))));
+        return [
+            'runtime' => PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg' ? 'cli' : 'web',
+            'phpinfo_available' => function_exists('phpinfo') && !in_array('phpinfo', $disabled, true),
+        ];
     }
 
     /**

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.12.0
+
+- Report runtime-scoped phpinfo availability without executing the function or exporting PHP configuration. Requires the GuardLMS receiver for issue #2935 before upgrading. CLI pushes do not establish web-runtime availability.
+
 ## 1.11.0 — 2026-11-08
 
 - Report bundled core and plugin dependency metadata through the authenticated
