@@ -92,8 +92,15 @@ Deploy the GuardLMS receiver supporting issue LdesignMedia/guardlms#2935 before
 upgrading: older receivers reject the new `hardening.php_functions` section.
 The connector observes `phpinfo` availability with `function_exists` and the local
 `disable_functions` list, without calling the function or exporting that list.
-Only a runtime label and boolean leave Moodle. Web and CLI observations remain
+Only a runtime label, availability/presence booleans and an allowlisted FFI mode leave Moodle. Web and CLI observations remain
 separate; use a manual web administration push for web-runtime evidence. Scheduled
 CLI pushes cannot establish web availability. Page access is not tested, and
 function availability does not establish public exposure. PHP configuration is
 never changed. Unknown SAPIs and collection failures remain unsupported/failed.
+
+The same section reports `pcntl_loaded` via `extension_loaded`, and `ffi_mode`
+(`unavailable`, `disabled`, `preload`, `enabled`) from extension presence and the
+local `ffi.enable` setting. Unknown modes are omitted. No PCNTL/FFI execution,
+library loading, or preload/configuration paths are collected. PCNTL presence
+does not prove individual functions are callable. FFI preload is restricted but
+not equivalent to disabled; CLI requirements remain separate from web advice.

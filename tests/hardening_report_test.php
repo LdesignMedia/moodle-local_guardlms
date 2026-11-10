@@ -35,7 +35,22 @@ final class hardening_report_test extends \advanced_testcase {
         $result = hardening_report::php_functions();
         $output = ob_get_clean();
         $this->assertSame('', $output);
-        $this->assertSame(['runtime', 'phpinfo_available'], array_keys($result));
+        $this->assertSame([], array_diff(array_keys($result), ['runtime', 'phpinfo_available', 'pcntl_loaded', 'ffi_mode']));
+        $this->assertSame(extension_loaded('pcntl'), $result['pcntl_loaded']);
+        if (!extension_loaded('FFI')) {
+            $this->assertSame('unavailable', $result['ffi_mode']);
+        } else {
+            $setting = strtolower(trim((string)ini_get('ffi.enable')));
+            if ($setting === 'preload') {
+                $this->assertSame('preload', $result['ffi_mode']);
+            } else if (in_array($setting, ['1', 'on', 'true'], true)) {
+                $this->assertSame('enabled', $result['ffi_mode']);
+            } else if (in_array($setting, ['0', 'off', 'false', ''], true)) {
+                $this->assertSame('disabled', $result['ffi_mode']);
+            } else {
+                $this->assertArrayNotHasKey('ffi_mode', $result);
+            }
+        }
         $this->assertSame('cli', $result['runtime']);
         $disabled = array_map('trim', explode(',', strtolower((string)ini_get('disable_functions'))));
         $this->assertSame(function_exists('phpinfo') && !in_array('phpinfo', $disabled, true), $result['phpinfo_available']);

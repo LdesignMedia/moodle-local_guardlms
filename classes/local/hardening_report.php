@@ -51,7 +51,7 @@ class hardening_report {
     }
 
     /**
-     * Observe availability only; never call phpinfo or export PHP configuration.
+     * Observe capability metadata only; never invoke diagnostic, process or native-library APIs.
      *
      * @return array|null Runtime-scoped boolean, or unsupported SAPI. Never a claim about page access.
      */
@@ -60,10 +60,24 @@ class hardening_report {
             return null;
         }
         $disabled = array_map('trim', explode(',', strtolower((string)ini_get('disable_functions'))));
-        return [
+        $result = [
             'runtime' => PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg' ? 'cli' : 'web',
             'phpinfo_available' => function_exists('phpinfo') && !in_array('phpinfo', $disabled, true),
+            'pcntl_loaded' => extension_loaded('pcntl'),
         ];
+        if (!extension_loaded('FFI')) {
+            $result['ffi_mode'] = 'unavailable';
+        } else {
+            $setting = ini_get('ffi.enable');
+            // Unknown/unreadable values stay absent, never coerced to disabled.
+            $modes = ['1' => 'enabled', 'on' => 'enabled', 'true' => 'enabled',
+                '0' => 'disabled', 'off' => 'disabled', 'false' => 'disabled', '' => 'disabled',
+                'preload' => 'preload'];
+            if (is_string($setting) && isset($modes[strtolower(trim($setting))])) {
+                $result['ffi_mode'] = $modes[strtolower(trim($setting))];
+            }
+        }
+        return $result;
     }
 
     /**
