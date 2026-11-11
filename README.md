@@ -85,3 +85,39 @@ Report problems through [GitHub issues](https://github.com/LdesignMedia/moodle-l
 Learn more at [guardlms.com](https://guardlms.com).
 
 Licensed under [GNU GPL v3 or later](LICENSE).
+
+### PHP diagnostic availability (1.12.0)
+
+Deploy the GuardLMS receiver supporting issue LdesignMedia/guardlms#2935 before
+upgrading: older receivers reject the new `hardening.php_functions` section.
+The connector observes `phpinfo` availability with `function_exists` and the local
+`disable_functions` list, without calling the function or exporting that list.
+Only a runtime label, availability/presence booleans and an allowlisted FFI mode leave Moodle. Web and CLI observations remain
+separate; use a manual web administration push for web-runtime evidence. Scheduled
+CLI pushes cannot establish web availability. Page access is not tested, and
+function availability does not establish public exposure. PHP configuration is
+never changed. Unknown SAPIs and collection failures remain unsupported/failed.
+
+The same section reports `pcntl_loaded` via `extension_loaded`, and `ffi_mode`
+(`unavailable`, `disabled`, `preload`, `enabled`) from extension presence and the
+local `ffi.enable` setting. Unknown modes are omitted. No PCNTL/FFI execution,
+library loading, or preload/configuration paths are collected. PCNTL presence
+does not prove individual functions are callable. FFI preload is restricted but
+not equivalent to disabled; CLI requirements remain separate from web advice.
+
+### Enrolment and executable prerequisite evidence (1.12.0)
+
+The hardening envelope includes `enrolment_methods` (global enablement, course
+instance presence, enabled instance presence, historical user-enrolment presence)
+and `external_tools` (configured path presence and, where verified by filesystem
+metadata, executable-file presence). No course/user identifiers, enrolment keys,
+paths or command arguments are exported. Hidden courses are included; usage does
+not prove current effective access. Missing settings and unreadable executables
+remain unknown. Binaries are never executed, including to obtain versions.
+
+External tools cover configured PHP, du, dot, Ghostscript, pdftoppm, Python,
+unoconv, aspell, ClamAV, LaTeX, dvips, dvisvgm and ImageMagick settings. Runtime is
+labelled web/CLI. A configured executable does not prove feature enablement,
+actual use, successful execution or a vulnerable binary version. GuardLMS uses
+these facts as context and in reviewed CVE-specific prerequisite rules, never as
+a blanket reason to suppress enrolment or binary vulnerabilities.

@@ -28,6 +28,73 @@ use local_guardlms\local\hardening_report;
  */
 final class hardening_report_test extends \advanced_testcase {
     /**
+     * Global enablement and historical assignment presence are separate observations.
+     */
+    public function test_enrolment_method_usage_remains_visible_when_disabled(): void {
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        $user = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($user->id, $course->id);
+        set_config('enrol_plugins_enabled', 'self,guest');
+        $methods = array_column(hardening_report::enrolment_methods()['methods'], null, 'name');
+        $this->assertFalse($methods['manual']['enabled']);
+        $this->assertTrue($methods['manual']['has_instances']);
+        $this->assertTrue($methods['manual']['has_enabled_instances']);
+        $this->assertTrue($methods['manual']['has_user_enrolments']);
+        $this->assertTrue($methods['self']['enabled']);
+        $this->assertSame(
+            ['name', 'enabled', 'has_instances', 'has_enabled_instances', 'has_user_enrolments'],
+            array_keys($methods['manual'])
+        );
+    }
+
+    /**
+     * Executable checks export no path and never invoke the configured executable.
+     */
+    public function test_executable_evidence_is_metadata_only(): void {
+        $this->resetAfterTest();
+        $root = make_request_directory();
+        $path = $root . '/private-tool';
+        file_put_contents($path, 'not a valid executable');
+        chmod($path, 0700);
+        $this->assertSame(['configured' => true, 'executable' => true], hardening_report::inspect_executable($path));
+        $this->assertSame(['configured' => false, 'executable' => false], hardening_report::inspect_executable(''));
+        foreach (['tool --version', 'https://example.invalid/tool', $root . '/missing', $root] as $unknown) {
+            $this->assertSame(['configured' => true], hardening_report::inspect_executable($unknown));
+        }
+        $this->assertStringNotContainsString($root, json_encode(hardening_report::inspect_executable($path)));
+    }
+
+    /**
+     * Availability checks must never execute phpinfo or return its diagnostic output.
+     */
+    public function test_php_function_observation_is_bounded_and_runtime_scoped(): void {
+        ob_start();
+        $result = hardening_report::php_functions();
+        $output = ob_get_clean();
+        $this->assertSame('', $output);
+        $this->assertSame([], array_diff(array_keys($result), ['runtime', 'phpinfo_available', 'pcntl_loaded', 'ffi_mode']));
+        $this->assertSame(extension_loaded('pcntl'), $result['pcntl_loaded']);
+        if (!extension_loaded('FFI')) {
+            $this->assertSame('unavailable', $result['ffi_mode']);
+        } else {
+            $setting = strtolower(trim((string)ini_get('ffi.enable')));
+            if ($setting === 'preload') {
+                $this->assertSame('preload', $result['ffi_mode']);
+            } else if (in_array($setting, ['1', 'on', 'true'], true)) {
+                $this->assertSame('enabled', $result['ffi_mode']);
+            } else if (in_array($setting, ['0', 'off', 'false', ''], true)) {
+                $this->assertSame('disabled', $result['ffi_mode']);
+            } else {
+                $this->assertArrayNotHasKey('ffi_mode', $result);
+            }
+        }
+        $this->assertSame('cli', $result['runtime']);
+        $disabled = array_map('trim', explode(',', strtolower((string)ini_get('disable_functions'))));
+        $this->assertSame(function_exists('phpinfo') && !in_array('phpinfo', $disabled, true), $result['phpinfo_available']);
+    }
+
+    /**
      * Sensitive configuration never appears in the complete exported inventory.
      */
     public function test_inventory_excludes_private_configuration(): void {
