@@ -36,7 +36,7 @@ class hardening_report {
     public static function collect(): array {
         $result = ['version' => 1];
         $sections = ['deployment', 'tokens', 'enrolments', 'tasks', 'mfa', 'recaptcha', 'mobile_api',
-            'antivirus', 'ssrf', 'filesystem', 'php_functions'];
+            'antivirus', 'ssrf', 'filesystem', 'php_functions', 'enrolment_methods', 'external_tools'];
         foreach ($sections as $section) {
             try {
                 $metrics = self::$section();
@@ -77,6 +77,91 @@ class hardening_report {
                 $result['ffi_mode'] = $modes[strtolower(trim($setting))];
             }
         }
+        return $result;
+    }
+
+    /**
+     * Installed methods, global enablement and usage presence, without course/user identifiers.
+     *
+     * @return array
+     */
+    public static function enrolment_methods(): array {
+        global $DB;
+        $plugins = \core_plugin_manager::instance()->get_plugins_of_type('enrol');
+        if (count($plugins) > 200) {
+            throw new \RuntimeException('Enrolment inventory exceeds limit');
+        }
+        $enabled = enrol_get_plugins(true);
+        $methods = [];
+        foreach ($plugins as $name => $plugin) {
+            $methods[] = [
+                'name' => $name,
+                'enabled' => isset($enabled[$name]),
+                'has_instances' => $DB->record_exists('enrol', ['enrol' => $name]),
+                'has_enabled_instances' => $DB->record_exists('enrol', ['enrol' => $name, 'status' => ENROL_INSTANCE_ENABLED]),
+                'has_user_enrolments' => $DB->record_exists_sql(
+                    "SELECT 1 FROM {user_enrolments} ue JOIN {enrol} e ON e.id = ue.enrolid WHERE e.enrol = :method",
+                    ['method' => $name]
+                ),
+            ];
+        }
+        return ['methods' => $methods];
+    }
+
+    /**
+     * Allowlisted executable settings. Never execute a configured path or disclose it.
+     *
+     * @return array
+     */
+    public static function external_tools(): array {
+        global $CFG;
+        $tools = [];
+        foreach (
+            ['php' => 'pathtophp', 'du' => 'pathtodu', 'dot' => 'pathtodot', 'ghostscript' => 'pathtogs',
+            'pdftoppm' => 'pathtopdftoppm', 'python' => 'pathtopython', 'unoconv' => 'pathtounoconv',
+            'aspell' => 'aspellpath'] as $name => $setting
+        ) {
+            // Missing settings on older versions remain unknown, not unconfigured.
+            if (isset($CFG->$setting)) {
+                $tools[] = ['name' => $name] + self::inspect_executable((string)$CFG->$setting);
+            }
+        }
+        foreach (
+            ['clamav' => ['antivirus_clamav', 'pathtoclam'],
+            'latex' => ['filter_tex', 'pathlatex'], 'dvips' => ['filter_tex', 'pathdvips'],
+            'dvisvgm' => ['filter_tex', 'pathdvisvgm'], 'imagemagick' => ['filter_tex', 'pathconvert']] as $name => $setting
+        ) {
+            $path = get_config($setting[0], $setting[1]);
+            if ($path !== false) {
+                $tools[] = ['name' => $name] + self::inspect_executable((string)$path);
+            }
+        }
+        return ['runtime' => PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg' ? 'cli' : 'web', 'tools' => $tools];
+    }
+
+    /**
+     * Local metadata only. Relative commands/wrappers cannot be resolved safely here.
+     *
+     * @param string $path Local configured value; never returned.
+     * @return array Bounded presence flags. No claim about version or actual execution.
+     */
+    public static function inspect_executable(string $path): array {
+        $configured = trim($path) !== '';
+        $result = ['configured' => $configured];
+        if (!$configured) {
+            return $result + ['executable' => false];
+        }
+        // Accept only absolute local paths, never stream wrappers or PATH lookups.
+        if (
+            strpos($path, '://') !== false || strpos($path, "\0") !== false ||
+                !(substr($path, 0, 1) === '/' || preg_match('~^[a-zA-Z]:[\\\\/]~', $path))
+        ) {
+            return $result;
+        }
+        if (is_file($path) && is_executable($path)) {
+            $result['executable'] = true;
+        }
+        // A failed stat can be caused by access restrictions: absence is not proven.
         return $result;
     }
 

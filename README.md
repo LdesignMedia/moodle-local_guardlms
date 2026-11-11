@@ -104,3 +104,20 @@ local `ffi.enable` setting. Unknown modes are omitted. No PCNTL/FFI execution,
 library loading, or preload/configuration paths are collected. PCNTL presence
 does not prove individual functions are callable. FFI preload is restricted but
 not equivalent to disabled; CLI requirements remain separate from web advice.
+
+### Enrolment and executable prerequisite evidence (1.12.0)
+
+The hardening envelope includes `enrolment_methods` (global enablement, course
+instance presence, enabled instance presence, historical user-enrolment presence)
+and `external_tools` (configured path presence and, where verified by filesystem
+metadata, executable-file presence). No course/user identifiers, enrolment keys,
+paths or command arguments are exported. Hidden courses are included; usage does
+not prove current effective access. Missing settings and unreadable executables
+remain unknown. Binaries are never executed, including to obtain versions.
+
+External tools cover configured PHP, du, dot, Ghostscript, pdftoppm, Python,
+unoconv, aspell, ClamAV, LaTeX, dvips, dvisvgm and ImageMagick settings. Runtime is
+labelled web/CLI. A configured executable does not prove feature enablement,
+actual use, successful execution or a vulnerable binary version. GuardLMS uses
+these facts as context and in reviewed CVE-specific prerequisite rules, never as
+a blanket reason to suppress enrolment or binary vulnerabilities.

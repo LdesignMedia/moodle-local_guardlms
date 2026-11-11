@@ -2,6 +2,8 @@
 
 ## 1.12.0
 
+- Forward bounded enrolment-method enablement/usage and configured external executable metadata for reviewed CVE prerequisites, without exposing paths or personal records.
+
 - Add metadata-only PCNTL presence and FFI configuration observations for optional web-runtime hardening advisories; preserve preload and unknown states.
 
 - Report runtime-scoped phpinfo availability without executing the function or exporting PHP configuration. Requires the GuardLMS receiver for issue #2935 before upgrading. CLI pushes do not establish web-runtime availability.
