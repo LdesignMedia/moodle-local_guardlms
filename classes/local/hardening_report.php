@@ -111,10 +111,13 @@ class hardening_report {
     /**
      * Allowlisted executable settings. Never execute a configured path or disclose it.
      *
-     * @return array
+     * @return array|null Null for unsupported runtime types.
      */
-    public static function external_tools(): array {
+    public static function external_tools(): ?array {
         global $CFG;
+        if (!in_array(PHP_SAPI, ['cli', 'phpdbg', 'apache2handler', 'cgi-fcgi', 'fpm-fcgi', 'litespeed', 'cli-server'], true)) {
+            return null;
+        }
         $tools = [];
         foreach (
             ['php' => 'pathtophp', 'du' => 'pathtodu', 'dot' => 'pathtodot', 'ghostscript' => 'pathtogs',
