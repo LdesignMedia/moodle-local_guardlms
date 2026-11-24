@@ -25,7 +25,6 @@
 
 namespace local_guardlms\local;
 
-
 /**
  * Parses metadata without executing dependency PHP or resolving version constraints.
  *
@@ -141,6 +140,7 @@ class dependency_parser
                 throw new \InvalidArgumentException('Invalid library manifest');
             }
             $rows = [];
+            $pathpattern = '#^[a-zA-Z0-9_@./+-]+$#D';
             foreach ($xml->library as $library) {
                 if (count($rows) >= 2000) {
                     $this->truncated = true;
@@ -151,6 +151,15 @@ class dependency_parser
                 // Dot-containing repository keys cannot be addressed with config dot notation.
                 $mapped = self::library_mappings()[$key] ?? null;
                 $location = self::relative_path(dirname($file) . '/' . (string) $library->location);
+                $path = $location;
+                if (!preg_match($pathpattern, $location)) {
+                    // Moodle manifests can use patterns such as mimetex.*.
+                    // Report the manifest as evidence when the location is not a literal inventory path.
+                    $path = self::relative_path($file);
+                    if (!preg_match($pathpattern, $path)) {
+                        throw new \InvalidArgumentException('Unsupported library manifest path');
+                    }
+                }
                 $version = trim((string) $library->version);
                 $rows[] = [
                     'ecosystem' => $mapped[0] ?? null,
@@ -159,7 +168,7 @@ class dependency_parser
 
                 'declared_version' => mb_substr($version, 0, 100),
                     'component' => $this->component_for_file($file),
-                    'path' => $location,
+                    'path' => $path,
                     'evidence_type' => 'bundled_manifest',
                     'dev' => self::contains($location, '/behat/') || self::contains($location, '/tests/'),
                     'customised' => isset($library->customised),

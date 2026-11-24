@@ -79,6 +79,24 @@ final class dependency_inventory_test extends \PHPUnit\Framework\TestCase {
     }
 
     /**
+     * Bundled locations with wildcard characters use the manifest as evidence.
+     * @return void
+     */
+    public function test_wildcard_library_location_uses_manifest_path(): void {
+        $path = 'filter/tex/thirdpartylibs.xml';
+        $xml = '<libraries><library><location>mimetex.*</location><name>mimeTeX</name><version>1.74</version>' .
+            '</library></libraries>';
+
+        $result = (new dependency_parser())->parse([$path => $xml]);
+
+        $this->assertSame('complete', $result['status']);
+        $this->assertCount(1, $result['packages']);
+        $this->assertSame('mimeTeX', $result['packages'][0]['name']);
+        $this->assertSame('1.74', $result['packages'][0]['version']);
+        $this->assertSame($path, $result['packages'][0]['path']);
+    }
+
+    /**
      * External xml unknown versions and escaping paths are unassessed.
      *
      * @return void
